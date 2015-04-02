@@ -1,9 +1,15 @@
-﻿html, body
+﻿@font-face {
+  font-family: Avenir LT W02 35 Light;
+  src: url(avenir.woff);
+}
+
+html, body
 {
     height: 100%;
     width: 100%;
     margin: 0;
     overflow: hidden;
+    font-family: 'Avenir LT W02 35 Light', Helvetica, Arial, sans-serif !important;
 }
 
 #map
@@ -13,11 +19,11 @@
 
 #header
 {
-    font-size: 1.1em;
-    font-family: sans-serif;
+    font-size: 1.3em;   
     padding-left: 1em;
-    padding-top: 4px;
-    color: #660000;
+    padding-top: 10px;
+    color: white;
+    background-color:maroon;
 }
 
 #LocateButton
@@ -25,7 +31,7 @@
     position: absolute;
     top: 95px;
     left: 20px;
-    z-index: 50;
+    z-index: 3;
 }
 
 #HomeButton
@@ -33,7 +39,7 @@
     position: absolute;
     top: 145px;
     left: 20px;
-    z-index: 50;
+    z-index: 3;
 }
 
 #search
@@ -45,18 +51,29 @@
     left: 75px;
 }
 
-#BasemapToggle
+#BasemapToggle, #basemapGallery
 {
     position: absolute;
     top: 20px;
     right: 20px;
-    z-index: 50;
+    z-index: 3;
+    background-color:rgba(105, 107, 99, 0.61);
+    font-size:.8em;
+    /*text-shadow: 1px 1px rgba(0,0,0,0.25);*/
+    color:white;
 }
-
-#legendDiv
+.esriBasemapGalleryNode
 {
-    font-family: Helvetica, Arial, sans-serif !important;
-    font-size: .7em;
+    width:50px;
+}
+.esriBasemapGalleryThumbnail
+{
+    height:33px;
+    width:50px;
+}
+#legendDiv
+{    
+    font-size: .8em;
 }
 
 .heading
@@ -65,8 +82,8 @@
     background-color: #808080;
     width: 95%;
     padding: 5px;
-    font-family: Helvetica, Arial, sans-serif;
-    font-size: 1.3em;
+    /*font-family: 'Avenir LT W02 35 Light', Helvetica, Arial, sans-serif;*/
+    font-size: 1em;
     text-align: center;
     letter-spacing: 5px;
     margin-bottom: 10px;
@@ -92,10 +109,52 @@
     opacity: 1;
 }
 
+#template-wrapper
+{
+    position:relative;
+}
+#template-overlay
+{
+    position:absolute;
+    top:0px;
+    left:0px;    
+    vertical-align:middle;
+    font-size:1.2em;
+    padding:90px 65px;
+    background-color:rgba(0,0,0,0.75);   
+    z-index:50;
+    color:white;
+    display:block;
+}
+
+#templateDiv
+{
+    position:relative;
+    padding-left:30px;
+}
+
+
 .templatePicker
 {
     border: none;
 }
+
+/*.esriAttributeInspector
+{
+    height: 100px;
+}*/
+
+    .esriAttributeInspector .atiLayerName
+    {
+        display: none;
+    }
+
+    .esriAttributeInspector .atiButton
+    {
+        margin-top: 1px;
+        margin-right: 45px;
+    }
+
 
 .dj_ie .infowindow .window .top .right .user .content
 {
@@ -110,11 +169,129 @@
 
 .templatePicker .grid .dojoxGridCell:hover
 {
-    border: 1px solid #7EABCD !important;
-    background-color: #aec7e3 !important;
-    -o-border-radius: 4px;
+    /*border: 1px solid #7EABCD !important;
+    background-color: #aec7e3 !important;*/
+    /*-o-border-radius: 4px;
     -moz-border-radius: 4px;
     -webkit-border-radius: 4px;
-    border-radius: 4px;
-    cursor:pointer;
+    border-radius: 4px;*/
+    cursor: pointer;
+    text-decoration:underline;
 }
+
+.instructions
+{
+    padding-top: 20px;
+    font-size: 12px;
+}
+
+.undoButtons
+{
+    width: 60%;
+    margin-left: auto;
+    margin-right: auto;
+    padding-top: 4px;
+}
+
+.templatePicker
+{
+    border: solid 2px #1A84AD !important;
+}
+
+.undoIcon
+{
+    background-image: url(../images/undo.png);
+    width: 16px;
+    height: 16px;
+}
+
+.redoIcon
+{
+    background-image: url(../images/redo.png);
+    width: 16px;
+    height: 16px;
+}
+
+.step-header
+{
+    font-size: 1.2em;
+    border-bottom: solid 1px #660000;
+    width: 100%;    
+}
+.step-content
+{
+    margin-top:2em;
+}
+.steps-wrapper
+{    
+    font-size:.8em;
+}
+
+.step-btn
+{
+    background-color:#1A84AD;
+    color:white;
+    width:60%;
+    margin-right:auto;
+    margin-left:auto;
+    text-align:center;
+    padding:10px;
+    font-size:1.1em;
+    margin-top:50px;
+}
+    .step-btn:hover, .step-btn-2:hover
+    {
+        background-color:#136686;
+        text-decoration:underline;
+        cursor:pointer;
+    }
+
+.step-btn-2
+{
+    float:left;
+    background-color:#1A84AD;
+    color:white;
+    width:20%;
+    margin:1em;   
+    text-align:center;
+    padding:10px;
+    font-size:1.1em;
+}
+.clear
+{
+    clear:both;
+}
+.step-wrapper-overlay
+{
+    position:absolute;
+    width:100%;
+    height:100%;
+    top:0px;
+    left:0px;
+    z-index:9999;
+    background-color:white;
+}
+
+.backBtn
+{
+    font-size:.9em;
+    color:#136686;
+    padding:10px 0px;
+}
+    .backBtn:hover
+    {
+        text-decoration:underline;
+        cursor:pointer;
+    }
+
+#selectedBarrier
+{
+    background-color:#f7fce3;
+    border:1px solid #919f5b;
+    width:92%;
+    padding:10px;
+}
+/*#clearSelection
+{
+    display:none;
+}*/
