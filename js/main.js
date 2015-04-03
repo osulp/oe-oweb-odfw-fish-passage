@@ -201,7 +201,7 @@ require([
 
         var nhd = new ArcGISDynamicMapService("http://services.nationalmap.gov/arcgis/rest/services/nhd/MapServer");
         nhd.setVisibleLayers([10, 13, 14, 15]);
-        map.addLayer(nhd);
+        //map.addLayer(nhd);
 
         var owri_fp = new FeatureLayer("http://arcgis.oregonexplorer.info/arcgis/rest/services/oreall/oreall_restoration/MapServer/5", {
             "id": "owri fp",
@@ -235,9 +235,9 @@ require([
         map.on('extent-change', function (evt) {            
             dojo.query('#template-overlay').style("display",evt.lod.level > 12 ? "none" : "block");            
         });
-        map.on("click", function (evt) {
-            //removeSpotlight();            
-        });
+        //map.on("click", function (evt) {
+        //    //removeSpotlight();            
+        //});
         geocoder.on("select", showLocation);
         geocoder.on("clear", removeSpotlight);
 
