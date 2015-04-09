@@ -159,6 +159,8 @@ require([
         var imagery = new esri.layers.ArcGISTiledMapServiceLayer("http://services.arcgisonline.com/arcgis/rest/services/World_Imagery/MapServer");
         var referenceLabels = new esri.layers.ArcGISTiledMapServiceLayer("http://services.arcgisonline.com/arcgis/rest/services/Canvas/World_Light_Gray_Reference/MapServer");
         var lightGray = new esri.layers.ArcGISTiledMapServiceLayer("http://services.arcgisonline.com/arcgis/rest/services/Canvas/World_Light_Gray_Base/MapServer");
+        var topo = new esri.layers.ArcGISTiledMapServiceLayer("http://services.arcgisonline.com/arcgis/rest/services/USA_Topo_Maps/MapServer");
+        var street = new esri.layers.ArcGISTiledMapServiceLayer("http://services.arcgisonline.com/arcgis/rest/services/World_Street_Map/MapServer");
 
         var imageryBasemap = new esri.dijit.Basemap({
             id: 'imagery',
@@ -170,10 +172,26 @@ require([
         var lightGrayBaseMap = new esri.dijit.Basemap({
             id: 'gray',
             layers: [lightGray, referenceLabels],
-            title: "Light Gray",
+            title: "Gray",
             thumbnailUrl: "images/light_gray_canvas.jpg"
         });
         basemaps.push(lightGrayBaseMap);
+
+        var topoBaseMap = new esri.dijit.Basemap({
+            id: 'topo',
+            layers: [topo],
+            title: "Topo",
+            thumbnailUrl: "images/topo_map_2.jpg"
+        });
+        basemaps.push(topoBaseMap);
+
+        var streetBaseMap = new esri.dijit.Basemap({
+            id: 'street',
+            layers: [street],
+            title: "Street",
+            thumbnailUrl: "images/world_street_map.jpg"
+        });
+        basemaps.push(streetBaseMap);
 
         basemapGallery = new esri.dijit.BasemapGallery({
             showArcGISBasemaps: false,
@@ -185,7 +203,7 @@ require([
         var selectionHandler = basemapGallery.on("selection-change", function () {
             dojo.disconnect(selectionHandler);
             add_layers();
-            basemapGallery.select('gray');//set light gray as default but load imagery for ability to zoom closer.
+            basemapGallery.select('topo');//set light gray as default but load imagery for ability to zoom closer.
         });
 
     }
@@ -195,7 +213,7 @@ require([
         //add boundaries and place names 
         var oregonMask = new FeatureLayer("http://arcgis.oregonexplorer.info/arcgis/rest/services/oreall/oreall_admin/MapServer/36", {
             "id": "oregonMask",
-            "opacity": 0.35
+            "opacity": 0.55
         });        
         map.addLayer(oregonMask);
 
@@ -231,7 +249,7 @@ require([
 
     function add_map_evt_handlers() {
 
-        map.on("load", enableSpotlight);
+        //map.on("load", enableSpotlight);
         map.on('extent-change', function (evt) {            
             dojo.query('#template-overlay').style("display",evt.lod.level > 12 ? "none" : "block");            
         });
@@ -540,25 +558,25 @@ require([
             map.infoWindow.setContent(evt.result.name);
             map.infoWindow.show(evt.result.feature.geometry);
 
-            var spotlight = map.on("extent-change", function (extentChange) {
-                var geom = screenUtils.toScreenGeometry(map.extent, map.width, map.height, extentChange.extent);
-                var width = geom.xmax - geom.xmin;
-                var height = geom.ymin - geom.ymax;
+            //var spotlight = map.on("extent-change", function (extentChange) {
+            //    var geom = screenUtils.toScreenGeometry(map.extent, map.width, map.height, extentChange.extent);
+            //    var width = geom.xmax - geom.xmin;
+            //    var height = geom.ymin - geom.ymax;
 
-                var max = height;
-                if (width > height) {
-                    max = width;
-                }
+            //    var max = height;
+            //    if (width > height) {
+            //        max = width;
+            //    }
 
-                var margin = '-' + Math.floor(max / 2) + 'px 0 0 -' + Math.floor(max / 2) + 'px';
+            //    var margin = '-' + Math.floor(max / 2) + 'px 0 0 -' + Math.floor(max / 2) + 'px';
 
-                query(".spotlight").addClass("spotlight-active").style({
-                    width: max + "px",
-                    height: max + "px",
-                    margin: margin
-                });
-                spotlight.remove();
-            });
+            //    query(".spotlight").addClass("spotlight-active").style({
+            //        width: max + "px",
+            //        height: max + "px",
+            //        margin: margin
+            //    });
+            //    spotlight.remove();
+            //});
         }
 
         function enableSpotlight() {
@@ -567,7 +585,7 @@ require([
         }
 
         function removeSpotlight() {
-            query(".spotlight").removeClass("spotlight-active");
+            //query(".spotlight").removeClass("spotlight-active");
             map.infoWindow.hide();
             map.graphics.clear();
         }
