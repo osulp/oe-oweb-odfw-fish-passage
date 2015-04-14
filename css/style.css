@@ -24,7 +24,21 @@ html, body
     padding-top: 10px;
     color: white;
     background-color:maroon;
+    position:relative;
 }
+#help
+{
+    position:absolute;
+    top:10px;
+    right:10px;
+    color:white;
+    font-size:.8em;
+}
+    #help:hover
+    {
+        cursor: pointer;
+        text-decoration: underline;        
+    }
 
 #LocateButton
 {
@@ -144,6 +158,16 @@ html, body
     height: 100px;
 }*/
 
+
+.atiAttributes table
+{
+width:100%;
+}
+
+.atiAttributes td > div
+{
+    width:100%;
+}
     .esriAttributeInspector .atiLayerName
     {
         display: none;

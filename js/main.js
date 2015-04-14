@@ -8,7 +8,8 @@
     activeStep,
     selectedBarrierForReport,
     basemapGallery,
-    //featureClick = false,
+    drawToolbar,
+    templatePicker,
     barriersLayerName = "Fish Passage Barriers";
 
 require([
@@ -26,7 +27,7 @@ require([
 
   "esri/layers/ArcGISTiledMapServiceLayer",
   "esri/layers/ArcGISDynamicMapServiceLayer",
-  "esri/layers/FeatureLayer",
+  "esri/layers/FeatureLayer",  
 
   "esri/Color",
   "esri/symbols/SimpleMarkerSymbol",
@@ -38,7 +39,7 @@ require([
   "dojo/query",
   "dojo/_base/Color",
   "esri/renderers/UniqueValueRenderer",
-
+  
   "esri/dijit/editing/Editor",
   "esri/dijit/editing/TemplatePicker",
   "esri/dijit/AttributeInspector",
@@ -48,10 +49,9 @@ require([
   "dojo/i18n!esri/nls/jsapi",
   "esri/renderers/jsonUtils",
 
-  "dojo/_base/array", "dojo/parser", "dojo/keys", "dijit/form/Button",
+  "dojo/_base/array", "dojo/parser", "dojo/keys", "dijit/form/Button", "dijit/Dialog",
 
-  "dijit/layout/BorderContainer", "dijit/layout/ContentPane",
-  
+  "dijit/layout/BorderContainer", "dijit/layout/ContentPane", 
   "dojo/domReady!"
 ], function (
   Map, SnappingManager, GeometryService, Geocoder, Edit, LocateButton, HomeButton, Scalebar, BasemapToggle, BasemapGallery, Legend,
@@ -60,7 +60,7 @@ require([
   Graphic, screenUtils, dom, domConstruct, query, DojoColor, UniqueRenderer,
   Editor, TemplatePicker, AttributeInspector, UndoManager,
   esriConfig, jsapiBundle, jsonUtil,
-  arrayUtils, parser, keys, Button
+  arrayUtils, parser, keys, Button, Dialog
 ) {
     parser.parse();
 
@@ -72,8 +72,8 @@ require([
 
     function set_display_handlers() {
         // snapping is enabled for this sample - change the tooltip to reflect this
-        jsapiBundle.toolbars.draw.start += "<br>Press <b>SHIFT</b> to enable snapping";
-        jsapiBundle.toolbars.draw.addPoint += "<br>Press <b>SHIFT</b> to enable snapping";
+        jsapiBundle.toolbars.draw.start += "<br>Press <b>SHIFT</b> to enable snapping<br>ESC to quit";
+        jsapiBundle.toolbars.draw.addPoint += "<br>Press <b>SHIFT</b> to enable snapping<br>ESC to quit";
 
         undoManager = new UndoManager({ maxOperations: 8 });//specify the number of undo operations allowed using the maxOperations parameter
 
@@ -89,6 +89,9 @@ require([
             map.infoWindow.hide();
             //dojo.byId('clearSelection').style.display = "none";
             dojo.byId('selectedBarrier').innerHTML = "No barrier selected";
+        });
+        dojo.connect(dojo.byId('help'), 'onclick', function (e) {
+            help_dialog.show();
         });
     }    
 
@@ -162,28 +165,14 @@ require([
         var topo = new esri.layers.ArcGISTiledMapServiceLayer("http://services.arcgisonline.com/arcgis/rest/services/USA_Topo_Maps/MapServer");
         var street = new esri.layers.ArcGISTiledMapServiceLayer("http://services.arcgisonline.com/arcgis/rest/services/World_Street_Map/MapServer");
 
-        var imageryBasemap = new esri.dijit.Basemap({
-            id: 'imagery',
-            layers: [imagery, referenceLabels],
-            title: "Satellite",
-            thumbnailUrl: "images/imagery.jpg"
-        });
-        basemaps.push(imageryBasemap);
-        var lightGrayBaseMap = new esri.dijit.Basemap({
-            id: 'gray',
-            layers: [lightGray, referenceLabels],
-            title: "Gray",
-            thumbnailUrl: "images/light_gray_canvas.jpg"
-        });
-        basemaps.push(lightGrayBaseMap);
-
-        var topoBaseMap = new esri.dijit.Basemap({
-            id: 'topo',
-            layers: [topo],
-            title: "Topo",
-            thumbnailUrl: "images/topo_map_2.jpg"
-        });
-        basemaps.push(topoBaseMap);
+        
+        //var lightGrayBaseMap = new esri.dijit.Basemap({
+        //    id: 'gray',
+        //    layers: [lightGray, referenceLabels],
+        //    title: "Gray",
+        //    thumbnailUrl: "images/light_gray_canvas.jpg"
+        //});
+        //basemaps.push(lightGrayBaseMap);
 
         var streetBaseMap = new esri.dijit.Basemap({
             id: 'street',
@@ -192,6 +181,22 @@ require([
             thumbnailUrl: "images/world_street_map.jpg"
         });
         basemaps.push(streetBaseMap);
+
+        var topoBaseMap = new esri.dijit.Basemap({
+            id: 'topo',
+            layers: [topo],
+            title: "Topo",
+            thumbnailUrl: "images/topo_map_2.jpg"
+        });
+        basemaps.push(topoBaseMap);       
+
+        var imageryBasemap = new esri.dijit.Basemap({
+            id: 'imagery',
+            layers: [imagery, referenceLabels],
+            title: "Satellite",
+            thumbnailUrl: "images/imagery.jpg"
+        });
+        basemaps.push(imageryBasemap);
 
         basemapGallery = new esri.dijit.BasemapGallery({
             showArcGISBasemaps: false,
@@ -203,7 +208,7 @@ require([
         var selectionHandler = basemapGallery.on("selection-change", function () {
             dojo.disconnect(selectionHandler);
             add_layers();
-            basemapGallery.select('topo');//set light gray as default but load imagery for ability to zoom closer.
+            basemapGallery.select('street');
         });
 
     }
@@ -217,23 +222,25 @@ require([
         });        
         map.addLayer(oregonMask);
 
-        var nhd = new ArcGISDynamicMapService("http://services.nationalmap.gov/arcgis/rest/services/nhd/MapServer");
-        nhd.setVisibleLayers([10, 13, 14, 15]);
-        //map.addLayer(nhd);
+        //var nhd = new ArcGISDynamicMapService("http://services.nationalmap.gov/arcgis/rest/services/nhd/MapServer", { "opacity": 0.1 });
+        //nhd.setVisibleLayers([10]);
+        //map.addLayer(nhd);       
+        
 
-        var owri_fp = new FeatureLayer("http://arcgis.oregonexplorer.info/arcgis/rest/services/oreall/oreall_restoration/MapServer/5", {
-            "id": "owri fp",
-            outFields: ['*'],
-            "opacity": 0.75,
-        });
-        owri_fp.setDefinitionExpression("activity_type like 'fish passage' or activity_type like 'Fish Passage' or activity_type like 'Fish Screening' or activity_type like 'fish screening'");
+        //var owri_fp = new FeatureLayer("http://arcgis.oregonexplorer.info/arcgis/rest/services/oreall/oreall_restoration/MapServer/5", {
+        //    "id": "owri fp",
+        //    outFields: ['*'],
+        //    "opacity": 0.75,
+        //});
+        //owri_fp.setDefinitionExpression("activity_type like 'fish passage' or activity_type like 'Fish Passage' or activity_type like 'Fish Screening' or activity_type like 'fish screening'");
         
         var streams = new FeatureLayer("http://services.nationalmap.gov/arcgis/rest/services/nhd/MapServer/10", {        
             "id": "streams",
             outFields: ['*'],
             "opacity": 0.75
-        });       
+        });            
         
+
         var priorityBarriers = new FeatureLayer("http://services.arcgis.com/uUvqNMGPm7axC2dD/ArcGIS/rest/services/ODFW_FishPassageBarriers/FeatureServer/0", {
             outFields: ['*']
         });
@@ -244,10 +251,17 @@ require([
             minScale:200000
         });
         
-        map.addLayers([streams, owri_fp, priorityBarriers, barriers]);
+        map.addLayers([streams, priorityBarriers, barriers]);        
     }
 
     function add_map_evt_handlers() {
+
+        map.on('key-down', function (evt) {
+            if (evt.keyCode === 27) {
+                drawToolbar.deactivate();
+                templatePicker.clearSelection();
+            }            
+        });
 
         //map.on("load", enableSpotlight);
         map.on('extent-change', function (evt) {            
@@ -308,12 +322,37 @@ require([
                         if (map.infoWindow.isShowing) {
                             map.infoWindow.hide();
                         }
-
+                       
                         var layerInfos = [{
                             'featureLayer': layer,
                             'isEditable': false,
                             'showDeleteButton': false
                         }];
+                        
+                        switch (layer.name) {
+                            case "Fish Passage Barriers":
+
+                                layerInfos[0].fieldInfos = [
+                                    { 'fieldName': 'fpbLat', 'label': 'Latitude' },
+                                    { 'fieldName': 'fpbLong', 'label': 'Longitude' },
+                                    { 'fieldName': 'fpbRevDt', 'label': 'Entry/Revision Date' },
+                                    { 'fieldName': 'fpbONm', 'label': 'Originator Name' },
+                                    { 'fieldName': 'fpbLocMd', 'label': 'Location Method' },
+                                    { 'fieldName': 'fpbFtrTy', 'label': 'Feature Type' },
+                                    { 'fieldName': 'fpbFtrNm', 'label': 'Feature Name' },
+                                    { 'fieldName': 'fpbFPasSta', 'label': 'Passage Status' },
+                                    { 'fieldName': 'fpbStaEvMd', 'label': 'Passage Eval Method' },
+                                    { 'fieldName': 'fpbStrNm', 'label': 'Stream Name' },
+                                    { 'fieldName': 'fpbRdNm', 'label': 'Road Name' },
+                                    { 'fieldName': 'fpbFtrSTy', 'label': 'Barrier Subtype' },
+                                    { 'fieldName': 'fpbOwn', 'label': 'Owner' },
+                                    { 'fieldName': 'fpbComment', 'label': 'Comment' },
+                                ];
+
+                                break;
+                            default:                                
+                                break;
+                        }                       
 
                         //store the current feature
                         updateFeature = evt.graphic;
@@ -406,7 +445,7 @@ require([
             
             addLegend(results);
 
-            var templatePicker = new esri.dijit.editing.TemplatePicker({
+            templatePicker = new esri.dijit.editing.TemplatePicker({
                 featureLayers: [barriers],//barrierLayer,
                 rows: 'auto',
                 columns: 3,
@@ -439,17 +478,19 @@ require([
             dojo.query(".step-wrapper-overlay").style("display", "none");            
             gotoStep(1);                       
            
-            var drawToolbar = new esri.toolbars.Draw(map);
+            drawToolbar = new esri.toolbars.Draw(map);
 
             
             //when users select an item from the template picker activate the draw toolbar
             //with the geometry type of the selected template item.
-            dojo.connect(templatePicker, "onSelectionChange", function () {
+            dojo.connect(templatePicker, "onSelectionChange", function (evt) {
                 selectedTemplate = templatePicker.getSelected();
                 //if (templatePicker.getSelected()) {
                 //    selectedTemplate = templatePicker.getSelected();
                 //}
-                drawToolbar.activate(esri.toolbars.Draw.POINT);
+                if (selectedTemplate !== null) {
+                    drawToolbar.activate(esri.toolbars.Draw.POINT);
+                }
             });
 
 

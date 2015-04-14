@@ -24,6 +24,7 @@
     <div id="main" data-dojo-type="dijit/layout/BorderContainer" data-dojo-props="design:'headline'" style="width: 100%; height: 100%;">
         <div data-dojo-type="dijit/layout/ContentPane" id="header" data-dojo-props="region:'top'">
             Fish Passage Barriers
+            <div id="help">help</div>
         </div>
         <div data-dojo-type="dijit/layout/ContentPane" data-dojo-props="region:'left'" style="width: 300px">
 
@@ -41,8 +42,10 @@
                 <div class="step-content">
                     <div>Please examine the known existing barriers in your project area to see if the barrier you worked on has already been mapped.  You can get information about each barrier (type, name, passage status) by clicking on each barrier.</div>
                     <br />
-                    <div>If your barrier has already been mapped click “Yes”
-If your barrier has not been mapped, click “No”</div>
+                    <div>
+                        If your barrier has already been mapped click “Yes”
+If your barrier has not been mapped, click “No”
+                    </div>
                     <br />
                     <div>Did you find your barrier?</div>
                     <div id="step2btnYes" onclick="gotoStep(3);" class="step-btn-2">Yes</div>
@@ -61,50 +64,53 @@ If your barrier has not been mapped, click “No”</div>
                     <div id="selected-barrier-wrapper">
                         <h3>Selected Barrier</h3>
                         <div id="selectedBarrier">No barrier selected</div>
-                         <button id="clearSelection" data-dojo-type="dijit.form.Button">Clear</button>
+                        <button id="clearSelection" data-dojo-type="dijit.form.Button">Clear</button>
                     </div>
                     <div class="step-btn step3btnSelect">SUBMIT & RETURN TO REPORT APPLICATION</div>
                 </div>
-        </div>
-        <div class="steps-wrapper">
-            <div class="step-header">STEP 3: Add your barrier</div>
-            <div class="backBtn" onclick="gotoStep(2);">< Back</div>
-            <div class="step-content">
-                <div>Select a barrier type below and place on map.  Use the SHIFT button to snap to stream, if applicable.</div>
-                <br />
-                <div>Enter as much information as you can to sumbit your information to ODFW.</div>
-                <br />
-                <div id="template-wrapper">
-                    <div id="template-overlay">Please zoom in to select barrier type to add.</div>
-                <div id="templateDiv"></div>
+            </div>
+            <div class="steps-wrapper">
+                <div class="step-header">STEP 3: Add your barrier</div>
+                <div class="backBtn" onclick="gotoStep(2);">< Back</div>
+                <div class="step-content">
+                    <div>Select a barrier type below and place on map.  Use the SHIFT button to snap to stream, if applicable.</div>
+                    <br />
+                    <div>Enter as much information as you can to sumbit your information to ODFW.</div>
+                    <br />
+                    <div id="template-wrapper">
+                        <div id="template-overlay">Please zoom in to select barrier type to add.</div>
+                        <div id="templateDiv"></div>
                     </div>
 
-                <div class="undoButtons">
-                    <button id="undo" data-dojo-type="dijit.form.Button" data-dojo-props="disabled:true, iconClass:'undoIcon'">Undo</button>
-                    <button id="redo" data-dojo-type="dijit.form.Button" data-dojo-props="disabled:true, iconClass:'redoIcon'">Redo</button>
+                    <div class="undoButtons">
+                        <button id="undo" data-dojo-type="dijit.form.Button" data-dojo-props="disabled:true, iconClass:'undoIcon'">Undo</button>
+                        <button id="redo" data-dojo-type="dijit.form.Button" data-dojo-props="disabled:true, iconClass:'redoIcon'">Redo</button>
+                    </div>
+                    <div class='instructions'>
+                        <ul style="list-style: none; padding-left: 4px;">
+                            <li><b>Create Features:</b> Select template then click on map.</li>
+                            <li><b>Delete Features:</b> Ctrl or Cmd + Click feature.</li>
+                        </ul>
+                        The undo/redo buttons will become enabled after editing the feature attributes or geometry.
+                    </div>
+                    <div class="step-btn step3btnSelect">SUBMIT & RETURN TO REPORT APPLICATION</div>
                 </div>
-                <div class='instructions'>
-                    <ul style="list-style: none; padding-left: 4px;">
-                        <li><b>Create Features:</b> Select template then click on map.</li>
-                        <li><b>Delete Features:</b> Ctrl or Cmd + Click feature.</li>
-                    </ul>
-                    The undo/redo buttons will become enabled after editing the feature attributes or geometry.
-                </div>
-                <div class="step-btn step3btnSelect">SUBMIT & RETURN TO REPORT APPLICATION</div>
             </div>
         </div>
+        <div data-dojo-type="dijit/layout/ContentPane" id="map" data-dojo-props="region:'center'">
+            <div id="search"></div>
+            <div id="LocateButton"></div>
+            <div id="HomeButton"></div>
+            <div id="BasemapToggle"></div>
+            <div id="basemapGallery"></div>
+        </div>
+        <div data-dojo-type="dijit/layout/ContentPane" data-dojo-props="region:'right'" style="width: 200px;">
+            <div class="heading">LEGEND</div>
+            <div id="legendDiv"></div>
+        </div>
     </div>
-    <div data-dojo-type="dijit/layout/ContentPane" id="map" data-dojo-props="region:'center'">
-        <div id="search"></div>
-        <div id="LocateButton"></div>
-        <div id="HomeButton"></div>
-        <div id="BasemapToggle"></div>
-        <div id="basemapGallery"></div>
-    </div>
-    <div data-dojo-type="dijit/layout/ContentPane" data-dojo-props="region:'right'" style="width: 200px;">
-        <div class="heading">LEGEND</div>
-        <div id="legendDiv"></div>
-    </div>
+    <div data-dojo-type="dijit/Dialog" data-dojo-id="help_dialog" title="Help">
+        Helpful content goes hear.
     </div>
 </body>
 </html>
