@@ -34,6 +34,8 @@ require([
   "esri/symbols/SimpleLineSymbol",
   "esri/graphic",
   "esri/geometry/screenUtils",
+  "esri/geometry/webMercatorUtils",
+
   "dojo/dom",
   "dojo/dom-construct",
   "dojo/query",
@@ -57,7 +59,7 @@ require([
   Map, SnappingManager, GeometryService, Geocoder, Edit, LocateButton, HomeButton, Scalebar, BasemapToggle, BasemapGallery, Legend,
   ArcGISTiledMapServiceLayer, ArcGISDynamicMapService, FeatureLayer,
   Color, SimpleMarkerSymbol, SimpleLineSymbol,
-  Graphic, screenUtils, dom, domConstruct, query, DojoColor, UniqueRenderer,
+  Graphic, screenUtils, webMercatorUtils, dom, domConstruct, query, DojoColor, UniqueRenderer,
   Editor, TemplatePicker, AttributeInspector, UndoManager,
   esriConfig, jsapiBundle, jsonUtil,
   arrayUtils, parser, keys, Button, Dialog
@@ -255,6 +257,18 @@ require([
     }
 
     function add_map_evt_handlers() {
+        map.on("load", function () {
+            //after map loads, connect to listen to mouse move & drag events
+            map.on("mouse-move", showCoordinates);
+            map.on("mouse-drag", showCoordinates);
+        });
+
+        function showCoordinates(evt) {
+            //the map is in web mercator but display coordinates in geographic (lat, long)
+            var mp = webMercatorUtils.webMercatorToGeographic(evt.mapPoint);
+            //display mouse coordinates
+            dom.byId("coords").innerHTML = mp.y.toFixed(3) + ", " + mp.x.toFixed(3);
+        }
 
         map.on('key-down', function (evt) {
             if (evt.keyCode === 27) {
@@ -270,6 +284,9 @@ require([
         //map.on("click", function (evt) {
         //    //removeSpotlight();            
         //});
+        map.infoWindow.on("hide", function () {
+            barriers.clearSelection();
+        });
         geocoder.on("select", showLocation);
         geocoder.on("clear", removeSpotlight);
 
@@ -399,9 +416,22 @@ require([
                 
                 if (layer.name === "Fish Passage Barriers") {
 
-                    dojo.connect(layer, "onBeforeApplyEdits", function () {
+                    dojo.connect(layer, "onBeforeApplyEdits", function (adds,updates,deletes) {
                         dijit.byId("undo").set("disabled", true);
                         dijit.byId("redo").set("disabled", true);
+                        dojo.forEach(adds, function (add) {
+                            //the map is in web mercator but display coordinates in geographic (lat, long)
+                            var mp = webMercatorUtils.webMercatorToGeographic(add.geometry);
+                            currentDate = new Date();
+                            var display_date = currentDate.getFullYear() + "" + ((currentDate.getMonth() + 1) > 9 ? (currentDate.getMonth() + 1) : "0" + (currentDate.getMonth() + 1)) + "" + ((currentDate.getDate() > 9 ? currentDate.getDate() : "0" + currentDate.getDate()));
+                            add.attributes['fpbLat'] = mp.y.toFixed(5);
+                            add.attributes['fpbLong'] = mp.x.toFixed(5);
+                            add.attributes['fpbRevDt'] = display_date;
+                            add.attributes['fpbONm'] = 'OWEB';
+                            add.attributes['fpbLocMd'] = 'DigDerive';
+                            add.attributes['fpbLocAccu'] = 50;
+                            add.attributes['fpbLocDt'] = display_date;
+                        });
                     });
 
                     dojo.connect(layer, "onEditsComplete", function (adds, updates, deletes) {
@@ -508,7 +538,23 @@ require([
 
                 var layerInfos = [{
                     'featureLayer': selectedTemplate.featureLayer,
-                    'isEditable': true
+                    'isEditable': true,
+                    'fieldInfos': [
+                                    { 'fieldName': 'fpbLat', 'isEditable': false, 'label': 'Latitude' },
+                                    { 'fieldName': 'fpbLong', 'isEditable': false, 'label': 'Longitude' },
+                                    { 'fieldName': 'fpbRevDt', 'isEditable': false, 'label': 'Entry/Revision Date' },
+                                    { 'fieldName': 'fpbONm', 'isEditable': false, 'label': 'Originator Name' },
+                                    { 'fieldName': 'fpbLocMd', 'isEditable': false, 'label': 'Location Method' },
+                                    { 'fieldName': 'fpbFtrTy', 'label': 'Feature Type' },
+                                    { 'fieldName': 'fpbFtrNm', 'label': 'Feature Name' },
+                                    { 'fieldName': 'fpbFPasSta', 'label': 'Passage Status' },
+                                    { 'fieldName': 'fpbStaEvMd', 'label': 'Passage Eval Method' },
+                                    { 'fieldName': 'fpbStrNm', 'label': 'Stream Name' },
+                                    { 'fieldName': 'fpbRdNm', 'label': 'Road Name' },
+                                    { 'fieldName': 'fpbFtrSTy', 'label': 'Barrier Subtype' },
+                                    { 'fieldName': 'fpbOwn', 'label': 'Owner' },
+                                    { 'fieldName': 'fpbComment', 'label': 'Comment' },
+                    ]
                 }];
 
                 var attInspector = new esri.dijit.AttributeInspector({
@@ -532,7 +578,7 @@ require([
                     drawToolbar.deactivate();
 
                     map.infoWindow.setContent(attInspector.domNode);
-                    map.infoWindow.resize(325, 185);
+                    map.infoWindow.resize(325, 385);
                     map.infoWindow.show(screenPoint, map.getInfoWindowAnchor(screenPoint));
 
                     templatePicker.clearSelection();                   
@@ -566,7 +612,7 @@ require([
                 dojo.connect(attInspector, "onDelete", function (feature) {
                     feature.getLayer().applyEdits(null, null, [feature]);
                     updateFeature = feature;
-                    map.infoWindow.hide();
+                    
                     var operation = new esri.dijit.editing.Delete({
                         featureLayer: feature.getLayer(),
                         deletedGraphics: [feature]
@@ -574,6 +620,7 @@ require([
 
                     undoManager.add(operation);
                     checkUI();
+                    map.infoWindow.hide();
                 });
                
             });

@@ -315,7 +315,11 @@ width:100%;
     width:92%;
     padding:10px;
 }
-/*#clearSelection
+#coords
 {
-    display:none;
-}*/
+    position:absolute; left:175px; bottom:15px; z-index:50;
+    padding:5px;
+    background-color:rgba(105, 107, 99, 0.61);
+    color:white;
+    font-size:.8em;
+}

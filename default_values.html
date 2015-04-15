@@ -1,0 +1,170 @@
+﻿    <html lang="en">  
+      <head>  
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8">  
+        <meta http-equiv="X-UA-Compatible" content="IE=7, IE=9" />  
+        <!--The viewport meta tag is used to improve the presentation and behavior of the samples   
+          on iOS devices-->  
+        <meta name="viewport" content="initial-scale=1, maximum-scale=1,user-scalable=no"/>  
+        <title>Validate Attributes</title>  
+      
+        <!-- include dojo theme -->  
+      
+        <link rel="stylesheet" type="text/css" href="http://serverapi.arcgisonline.com/jsapi/arcgis/2.6/js/dojo/dijit/themes/claro/claro.css">  
+        <style type="text/css">  
+          .dj_ie .infowindow .window .top .right .user .content { position: relative; }  
+          .dj_ie .simpleInfoWindow .content {position: relative;}  
+        </style>  
+        <style>  
+          html, body { height: 100%; width: 100%; margin: 0; padding: 0; overflow:hidden; }  
+          #leftPane{  
+            overflow:hidden;  
+            border:none;  
+            color:#5C832F;  
+          }  
+          #map{  
+            border: solid medium #382513;  
+            padding:0;  
+          }  
+      
+          .esriAttributeInspector{  
+              atiLayerName:'Building Details'  
+          }  
+          .templatePicker{  
+            border:none !important;  
+          }  
+          .templatePicker .grid .groupLabel{  
+            display:none;  
+          }  
+        </style>  
+      
+        <!-- specify dojo configuration to parse dijits at load time -->  
+        <script type="text/javascript">
+            dojoConfig = {
+                parseOnLoad: true
+            };
+        </script>  
+      
+        <!-- reference ArcGIS JavaScript API -->  
+      
+        <script type="text/javascript" src="http://serverapi.arcgisonline.com/jsapi/arcgis/?v=2.6"></script>  
+        <script type="text/javascript">
+            //require selection dijit  
+            dojo.require("esri.map");
+            dojo.require("esri.dijit.editing.Editor-all");
+            dojo.require("dijit.layout.ContentPane");
+            dojo.require("dijit.layout.BorderContainer");
+            dojo.require("dijit.form.DateTextBox");
+            dojo.require("dijit.form.TextBox");
+
+
+            var map;
+
+            function init() {
+                //This sample requires a proxy page to handle communications with the ArcGIS Server services. You will need to    
+                //replace the url below with the location of a proxy on your machine. See the 'Using the proxy page' help topic   
+                //for details on setting up a proxy page.  
+                esri.config.defaults.io.proxyUrl = "proxy.ashx";
+
+                //This service is for development and testing purposes only. We recommend that you create your own geometry service for use within your applications.   
+                esri.config.defaults.geometryService = new esri.tasks.GeometryService("http://tasks.arcgisonline.com/ArcGIS/rest/services/Geometry/GeometryServer");
+
+
+                var initialExtent = new esri.geometry.Extent({ "xmin": -13062820, "ymin": 4063755, "xmax": -13048794, "ymax": 4071609, "spatialReference": { "wkid": 102100 } });
+                map = new esri.Map("map", { extent: initialExtent, slider: false, nav: true });
+
+                dojo.connect(map, "onLoad", function () {
+                    //resize the map when the browser resizes  
+                    dojo.connect(dijit.byId('map'), 'resize', map, map.resize);
+                });
+
+                dojo.connect(map, "onLayersAddResult", initEditor);
+
+
+                var basemap = new esri.layers.ArcGISTiledMapServiceLayer("http://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer");
+                map.addLayer(basemap);
+
+                //Add the editable feature layer to the map  
+                var pointsOfInterest = new esri.layers.FeatureLayer("http://sampleserver5.arcgisonline.com/ArcGIS/rest/services/Notes/FeatureServer/0", {
+                    mode: esri.layers.FeatureLayer.MODE_ONDEMAND,
+                    outFields: ['*']
+                });
+
+
+                map.addLayers([pointsOfInterest]);
+            }
+
+            function initEditor(results) {
+
+                //only one layer   
+                var featureLayer = results[0].layer;
+
+                //add a default value for newly added features   
+                dojo.connect(featureLayer, 'onBeforeApplyEdits', function (adds, deletes, updates) {
+                    dojo.forEach(adds, function (add) {
+                        if (add.attributes['name'] === null) {
+                            add.attributes['name'] = 'Sam Wrangler';
+                        }
+                    });
+                });
+                var templatePicker = new esri.dijit.editing.TemplatePicker({
+                    featureLayers: [featureLayer],
+                    rows: 'auto',
+                    groupingEnabled: false,
+                    columns: 1
+                }, 'editorDiv');
+
+
+                templatePicker.startup();
+
+
+
+                var textDijit = new dijit.form.TextBox({
+                    id: "nameField",
+                    placeHolder: 'Enter your name here' //do they need placeholder or value  
+                });
+
+
+
+                var layerInfos = [{
+                    'featureLayer': featureLayer,
+                    'showAttachments': false,
+                    'showDeleteButton': false,
+                    'fieldInfos': [
+                      { 'fieldName': 'name', 'label': 'Name', 'customField': textDijit },
+                      { 'fieldName': 'email', 'label': 'Email' }
+                    ]
+                }];
+
+                //define the editor settings  
+                var settings = {
+                    map: map,
+                    templatePicker: templatePicker,
+                    layerInfos: layerInfos
+                };
+
+                var params = { settings: settings };
+
+                //Create the editor widget   
+                var editorWidget = new esri.dijit.editing.Editor(params);
+                editorWidget.startup();
+
+                //resize the info window (attribute inspector)  
+                map.infoWindow.resize(295, 245);
+            }
+
+            dojo.addOnLoad(init);
+        </script>  
+      </head>  
+      <body class="claro">      
+        <div data-dojo-type="dijit.layout.BorderContainer" data-dojo-props="design:'sidebar'" style="width:100%;height:100%;">  
+          <div id="map" data-dojo-type="dijit.layout.ContentPane" data-dojo-props="region:'center'"></div>  
+          <div id="leftPane" data-dojo-type="dijit.layout.ContentPane" style="width:100px;"  data-dojo-props="region:'left'">  
+            <div>Click the Notes icon - then click location on map to add new map note. When a new phone number is   
+              entered dojo's ValidationTextBox is used to make sure a properly formatted phone number is entered.</div>  
+      
+            <div id="editorDiv"></div>  
+            <div></div>  
+          </div>  
+        </div>  
+      </body>  
+    </html>  
