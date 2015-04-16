@@ -10,7 +10,11 @@
     basemapGallery,
     drawToolbar,
     templatePicker,
-    barriersLayerName = "Fish Passage Barriers";
+    barriersLayerName = "Fish Passage Barriers",
+    nhdServiceUrl = "http://services.nationalmap.gov/arcgis/rest/services/nhd/MapServer/10",
+    fpServiceUrl = "http://services.arcgis.com/uUvqNMGPm7axC2dD/arcgis/rest/services/OregonFishPassageBarriers/FeatureServer/0",
+    geometryServiceUrl = "http://arcgis.oregonexplorer.info/arcgis/rest/services/Utilities/Geometry/GeometryServer",
+    oregonMaskServiceUrl = "http://arcgis.oregonexplorer.info/arcgis/rest/services/oreall/oreall_admin/MapServer" //36;
 
 require([
   "esri/map",
@@ -27,7 +31,9 @@ require([
 
   "esri/layers/ArcGISTiledMapServiceLayer",
   "esri/layers/ArcGISDynamicMapServiceLayer",
-  "esri/layers/FeatureLayer",  
+  "esri/layers/FeatureLayer",
+  "esri/tasks/query",
+  "esri/tasks/BufferParameters",
 
   "esri/Color",
   "esri/symbols/SimpleMarkerSymbol",
@@ -35,11 +41,13 @@ require([
   "esri/graphic",
   "esri/geometry/screenUtils",
   "esri/geometry/webMercatorUtils",
+  "esri/geometry/normalizeUtils",  
 
   "dojo/dom",
   "dojo/dom-construct",
   "dojo/query",
   "dojo/_base/Color",
+  "dojo/promise/all",
   "esri/renderers/UniqueValueRenderer",
   
   "esri/dijit/editing/Editor",
@@ -57,9 +65,9 @@ require([
   "dojo/domReady!"
 ], function (
   Map, SnappingManager, GeometryService, Geocoder, Edit, LocateButton, HomeButton, Scalebar, BasemapToggle, BasemapGallery, Legend,
-  ArcGISTiledMapServiceLayer, ArcGISDynamicMapService, FeatureLayer,
+  ArcGISTiledMapServiceLayer, ArcGISDynamicMapService, FeatureLayer, Query, BufferParameters,
   Color, SimpleMarkerSymbol, SimpleLineSymbol,
-  Graphic, screenUtils, webMercatorUtils, dom, domConstruct, query, DojoColor, UniqueRenderer,
+  Graphic, screenUtils, webMercatorUtils, normalizeUtils, dom, domConstruct, query, DojoColor, all, UniqueRenderer,
   Editor, TemplatePicker, AttributeInspector, UndoManager,
   esriConfig, jsapiBundle, jsonUtil,
   arrayUtils, parser, keys, Button, Dialog
@@ -100,11 +108,10 @@ require([
     function set_map() {
         // refer to "Using the Proxy Page" for more information:  https://developers.arcgis.com/javascript/jshelp/ags_proxy.html
         esriConfig.defaults.io.proxyUrl = "proxy.ashx";
-        esriConfig.defaults.geometryService = new GeometryService("http://arcgis.oregonexplorer.info/arcgis/rest/services/Utilities/Geometry/GeometryServer");
+        esriConfig.defaults.geometryService = new GeometryService(geometryServiceUrl);
         var ext = new esri.geometry.Extent(-14371103.538135934, 4979131.637192282, -12475465.236664068, 6030905.146396027, new esri.SpatialReference({ wkid: 102100 }));
 
-        map = new Map("map", {
-            //basemap: "gray", //topo,hybrid,dark,imagery
+        map = new Map("map", {            
             center: [-120.5, 44.351],
             zoom: 7,
             slider: true
@@ -142,17 +149,7 @@ require([
             },
             autoComplete: true,
             map: map
-        }, dom.byId("search"));
-
-        //add basemap toggle
-        //var toggle = new BasemapToggle({
-        //    map: map,
-        //    basemap: "satellite" //"streets" | "satellite" | "hybrid"| "topo"| "gray" | "dark-gray" | "oceans"| "national-geographic"| "terrain" | "osm"
-        //}, "BasemapToggle");
-        //toggle.startup();
-
-        //add display layers
-        //add_layers();
+        }, dom.byId("search"));        
 
         //add map event handlers
         add_map_evt_handlers();
@@ -218,10 +215,11 @@ require([
 
     function add_layers() {
         //add boundaries and place names 
-        var oregonMask = new FeatureLayer("http://arcgis.oregonexplorer.info/arcgis/rest/services/oreall/oreall_admin/MapServer/36", {
+        var oregonMask = new ArcGISDynamicMapService(oregonMaskServiceUrl, {
             "id": "oregonMask",
             "opacity": 0.55
-        });        
+        });
+        oregonMask.setVisibleLayers([36]);
         map.addLayer(oregonMask);
 
         //var nhd = new ArcGISDynamicMapService("http://services.nationalmap.gov/arcgis/rest/services/nhd/MapServer", { "opacity": 0.1 });
@@ -236,24 +234,24 @@ require([
         //});
         //owri_fp.setDefinitionExpression("activity_type like 'fish passage' or activity_type like 'Fish Passage' or activity_type like 'Fish Screening' or activity_type like 'fish screening'");
         
-        var streams = new FeatureLayer("http://services.nationalmap.gov/arcgis/rest/services/nhd/MapServer/10", {        
+        var streams = new FeatureLayer(nhdServiceUrl, {
             "id": "streams",
             outFields: ['*'],
             "opacity": 0.75
         });            
         
 
-        var priorityBarriers = new FeatureLayer("http://services.arcgis.com/uUvqNMGPm7axC2dD/ArcGIS/rest/services/ODFW_FishPassageBarriers/FeatureServer/0", {
-            outFields: ['*']
-        });
+        //var priorityBarriers = new FeatureLayer("http://services.arcgis.com/uUvqNMGPm7axC2dD/ArcGIS/rest/services/ODFW_FishPassageBarriers/FeatureServer/0", {
+        //    outFields: ['*']
+        //});
         //
-        barriers = new FeatureLayer("http://services.arcgis.com/uUvqNMGPm7axC2dD/arcgis/rest/services/OregonFishPassageBarriers/FeatureServer/0", {
+        barriers = new FeatureLayer(fpServiceUrl, {
             mode: FeatureLayer.MODE_ONDEMAND,
             outFields: ['*'],
             minScale:200000
         });
         
-        map.addLayers([streams, priorityBarriers, barriers]);        
+        map.addLayers([streams, barriers]);        
     }
 
     function add_map_evt_handlers() {
@@ -416,7 +414,7 @@ require([
                 
                 if (layer.name === "Fish Passage Barriers") {
 
-                    dojo.connect(layer, "onBeforeApplyEdits", function (adds,updates,deletes) {
+                    dojo.connect(layer, "onBeforeApplyEdits", function (adds,deletes,updates) {
                         dijit.byId("undo").set("disabled", true);
                         dijit.byId("redo").set("disabled", true);
                         dojo.forEach(adds, function (add) {
@@ -424,14 +422,41 @@ require([
                             var mp = webMercatorUtils.webMercatorToGeographic(add.geometry);
                             currentDate = new Date();
                             var display_date = currentDate.getFullYear() + "" + ((currentDate.getMonth() + 1) > 9 ? (currentDate.getMonth() + 1) : "0" + (currentDate.getMonth() + 1)) + "" + ((currentDate.getDate() > 9 ? currentDate.getDate() : "0" + currentDate.getDate()));
-                            add.attributes['fpbLat'] = mp.y.toFixed(5);
-                            add.attributes['fpbLong'] = mp.x.toFixed(5);
-                            add.attributes['fpbRevDt'] = display_date;
-                            add.attributes['fpbONm'] = 'OWEB';
-                            add.attributes['fpbLocMd'] = 'DigDerive';
-                            add.attributes['fpbLocAccu'] = 50;
-                            add.attributes['fpbLocDt'] = display_date;
+                            //buffer point for stream/road queries
+                            //setup the buffer parameters
+                            var params = new BufferParameters();
+                            params.distances = [100];
+                            params.outSpatialReference = map.spatialReference;
+                            params.unit = GeometryService['UNIT_FOOT'];
+                            params.geometries = [add.geometry];
+
+                            esriConfig.defaults.geometryService.buffer(params, function (bufferedGeom) {
+                                //build query task
+                                qt_stream = new esri.tasks.QueryTask(nhdServiceUrl);
+
+                                var stream_query = new esri.tasks.Query();
+                                stream_query.outSpatialReference = { "wkid": 102100 };
+                                stream_query.returnGeometry = false;
+                                stream_query.geometry = bufferedGeom[0];
+                                stream_query.outFields = ["GNIS_NAME"];
+
+                                var stream_promise = qt_stream.execute(stream_query);
+                                var promises = all([stream_promise]);
+                                promises.then(function (results) {
+                                    add.attributes['fpbLat'] = mp.y.toFixed(5);
+                                    add.attributes['fpbLong'] = mp.x.toFixed(5);
+                                    add.attributes['fpbRevDt'] = display_date;
+                                    add.attributes['fpbONm'] = 'OWEB';
+                                    add.attributes['fpbLocMd'] = 'DigDerive';
+                                    add.attributes['fpbLocAccu'] = 50;
+                                    add.attributes['fpbLocDt'] = display_date;
+                                    if (results[0].features.length > 0) {
+                                        add.attributes['fpbStrNm'] = results[0].features[0].attributes.GNIS_NAME !== null ? results[0].features[0].attributes.GNIS_NAME : "";
+                                    }
+                                });
+                            });                                                                          
                         });
+                        return false;
                     });
 
                     dojo.connect(layer, "onEditsComplete", function (adds, updates, deletes) {
@@ -547,11 +572,19 @@ require([
                                     { 'fieldName': 'fpbLocMd', 'isEditable': false, 'label': 'Location Method' },
                                     { 'fieldName': 'fpbFtrTy', 'label': 'Feature Type' },
                                     { 'fieldName': 'fpbFtrNm', 'label': 'Feature Name' },
+                                    { 'fieldName': 'fpbMltFtr', 'label': 'Multiple Feature Flag' },
                                     { 'fieldName': 'fpbFPasSta', 'label': 'Passage Status' },
-                                    { 'fieldName': 'fpbStaEvMd', 'label': 'Passage Eval Method' },
+                                    { 'fieldName': 'fpbStaEvDt', 'label': 'Passage Status Eval Date' },
+                                    { 'fieldName': 'fpbStaEvMd', 'label': 'Passage Status Eval Method' },
                                     { 'fieldName': 'fpbStrNm', 'label': 'Stream Name' },
                                     { 'fieldName': 'fpbRdNm', 'label': 'Road Name' },
                                     { 'fieldName': 'fpbFtrSTy', 'label': 'Barrier Subtype' },
+                                    { 'fieldName': 'fpbHeight', 'label': 'Height (ft)' },
+                                    { 'fieldName': 'fpbLength', 'label': 'Length(ft)' },
+                                    { 'fieldName': 'fpbWidth', 'label': 'Width(ft)' },
+                                    { 'fieldName': 'fpbSlope', 'label': 'Slope(%)' },
+                                    { 'fieldName': 'fpbDrop', 'label': 'Drop(ft)' },
+                                    { 'fieldName': 'fpbOrYr', 'label': 'Origin Year' },
                                     { 'fieldName': 'fpbOwn', 'label': 'Owner' },
                                     { 'fieldName': 'fpbComment', 'label': 'Comment' },
                     ]
