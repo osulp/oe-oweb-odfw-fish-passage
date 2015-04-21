@@ -364,6 +364,7 @@ require([
                                         { 'fieldName': 'fpbFtrSTy', 'label': 'Barrier Subtype' },
                                         { 'fieldName': 'fpbOwn', 'label': 'Owner' },
                                         { 'fieldName': 'fpbComment', 'label': 'Comment' },
+                                        { 'fieldName': 'Priority', 'label': 'Priority Barrier' },
                                     ];
 
                                     break;
@@ -481,7 +482,7 @@ require([
 
             templatePicker = new esri.dijit.editing.TemplatePicker({
                 featureLayers: [barriers],//barrierLayer,
-                rows: 'auto',
+                rows: 3,
                 columns: 3,
                 grouping: true
             }, "templateDiv");
@@ -583,6 +584,8 @@ require([
                     map.infoWindow.hide();
                     drawToolbar.deactivate();
                 });
+
+                window.setTimeout(function () { }, 1000);
 
                 selectedTemplate.featureLayer.applyEdits([newGraphic], null, null, function () {
                     if (newGraphic.attributes.fpbLat !== 0) {
