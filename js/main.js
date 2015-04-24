@@ -15,7 +15,8 @@
     fpServiceUrl = "http://services.arcgis.com/uUvqNMGPm7axC2dD/arcgis/rest/services/OregonFishPassageBarriers/FeatureServer/0",
     geometryServiceUrl = "http://arcgis.oregonexplorer.info/arcgis/rest/services/Utilities/Geometry/GeometryServer",
     oregonMaskServiceUrl = "http://arcgis.oregonexplorer.info/arcgis/rest/services/oreall/oreall_admin/MapServer", //36;
-    roadServiceUrl = "http://navigator.state.or.us/arcgis/rest/services/Framework/Trans_GeneralMap_WM/MapServer/3";
+    roadServiceUrl = "http://navigator.state.or.us/arcgis/rest/services/Framework/Trans_GeneralMap_WM/MapServer/3",
+    editor_id = "oweb_2001001";
 
 require([
   "esri/map",
@@ -242,17 +243,18 @@ require([
         });            
         
 
-        //var priorityBarriers = new FeatureLayer("http://services.arcgis.com/uUvqNMGPm7axC2dD/ArcGIS/rest/services/ODFW_FishPassageBarriers/FeatureServer/0", {
-        //    outFields: ['*']
-        //});
+        var priorityBarriers = new FeatureLayer("http://services.arcgis.com/uUvqNMGPm7axC2dD/ArcGIS/rest/services/ODFW_FishPassageBarriers/FeatureServer/0", {
+            outFields: ['*']
+        });
         //
         barriers = new FeatureLayer(fpServiceUrl, {
             mode: FeatureLayer.MODE_ONDEMAND,
             outFields: ['*'],
-            minScale:200000
+            //minScale:400000
         });
-        
-        map.addLayers([streams, barriers]);        
+        barriers.setDefinitionExpression("Priority<>''");
+        map.addLayers([streams, priorityBarriers, barriers]);
+
     }
 
     function add_map_evt_handlers() {
@@ -278,7 +280,13 @@ require([
 
         //map.on("load", enableSpotlight);
         map.on('extent-change', function (evt) {            
-            dojo.query('#template-overlay').style("display",evt.lod.level > 12 ? "none" : "block");            
+            dojo.query('#template-overlay').style("display", evt.lod.level > 12 ? "none" : "block");
+            //show all barriers when zoomed in
+            if (barriers !== undefined) {
+                var expression = evt.lod.level < 12 ? "Priority<>''" : "1=1";
+                barriers.setDefinitionExpression(expression);                
+            }
+
         });
         //map.on("click", function (evt) {
         //    //removeSpotlight();            
@@ -342,8 +350,8 @@ require([
 
                             var layerInfos = [{
                                 'featureLayer': layer,
-                                'isEditable': false,
-                                'showDeleteButton': false
+                                'isEditable': evt.graphic.attributes.Editor === editor_id ? true : false,
+                                'showDeleteButton': evt.graphic.attributes.Editor === editor_id ? true : false,
                             }];
 
                             switch (layer.name) {
@@ -460,6 +468,8 @@ require([
                                     add.attributes['fpbLocMd'] = 'DigDerive';
                                     add.attributes['fpbLocAccu'] = 50;
                                     add.attributes['fpbLocDt'] = display_date;
+                                    add.attributes['Creator'] = editor_id;
+                                    add.attributes['Editor'] = editor_id;
                                     if (results[0].features.length > 0) {
                                         add.attributes['fpbStrNm'] = results[0].features[0].attributes.GNIS_NAME !== null ? results[0].features[0].attributes.GNIS_NAME : "";
                                     }
@@ -547,9 +557,9 @@ require([
                     'fieldInfos': [
                                     { 'fieldName': 'fpbLat', 'isEditable': false, 'label': 'Latitude' },
                                     { 'fieldName': 'fpbLong', 'isEditable': false, 'label': 'Longitude' },
-                                    { 'fieldName': 'fpbRevDt', 'isEditable': false, 'label': 'Entry/Revision Date' },
-                                    { 'fieldName': 'fpbONm', 'isEditable': false, 'label': 'Originator Name' },
-                                    { 'fieldName': 'fpbLocMd', 'isEditable': false, 'label': 'Location Method' },
+                                    //{ 'fieldName': 'fpbRevDt', 'isEditable': false, 'label': 'Entry/Revision Date' },
+                                    //{ 'fieldName': 'fpbONm', 'isEditable': false, 'label': 'Originator Name' },
+                                    //{ 'fieldName': 'fpbLocMd', 'isEditable': false, 'label': 'Location Method' },
                                     { 'fieldName': 'fpbFtrTy', 'label': 'Feature Type' },
                                     { 'fieldName': 'fpbFtrNm', 'label': 'Feature Name' },
                                     { 'fieldName': 'fpbMltFtr', 'label': 'Multiple Feature Flag' },
