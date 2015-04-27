@@ -3,6 +3,7 @@
     geocoder,
     undoManager,
     barriers,
+    streams,
     attInspector,
     selectedTemplate,
     activeStep,
@@ -236,7 +237,7 @@ require([
         //});
         //owri_fp.setDefinitionExpression("activity_type like 'fish passage' or activity_type like 'Fish Passage' or activity_type like 'Fish Screening' or activity_type like 'fish screening'");
         
-        var streams = new FeatureLayer(nhdServiceUrl, {
+        streams = new FeatureLayer(nhdServiceUrl, {
             "id": "streams",
             outFields: ['*'],
             "opacity": 0.75
@@ -511,11 +512,18 @@ require([
               ),
               null
             );
-            map.enableSnapping({
+
+            var snapManager = map.enableSnapping({
                 snapPointSymbol: symbol,
                 tolerance: 20,
                 snapKey: keys.SHIFT
             });
+            var layerInfos = [{
+                layer: streams,
+                snapToEdge: true,
+                snapToVertex: false
+            }];
+            snapManager.setLayerInfos(layerInfos);            
 
            // myEditor.startup();
 
