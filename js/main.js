@@ -17,7 +17,7 @@
     geometryServiceUrl = "http://arcgis.oregonexplorer.info/arcgis/rest/services/Utilities/Geometry/GeometryServer",
     oregonMaskServiceUrl = "http://arcgis.oregonexplorer.info/arcgis/rest/services/oreall/oreall_admin/MapServer", //36;
     roadServiceUrl = "http://navigator.state.or.us/arcgis/rest/services/Framework/Trans_GeneralMap_WM/MapServer/3",
-    editor_id = "oweb_2001001";
+    editor_id = 12;
 
 require([
   "esri/map",
@@ -299,10 +299,7 @@ require([
         geocoder.on("clear", removeSpotlight);
 
         //add the legend and edit template picker when map.addLayers called.  Only layers added with this will be included. 
-        map.on("layers-add-result", function (results) {
-            var barrierLayer;
-                
-
+        map.on("layers-add-result", function (results) {            
             var layers = dojo.map(results.layers, function (result) {
                 return result.layer;
             });
@@ -322,112 +319,25 @@ require([
                     });
                     layer.setRenderer(renderer);
                 }
+                if (layer.name === "ODFW Fish Passage Barriers, Priority") {
+                    var renderer = layer.renderer;
+                    renderer.setSizeInfo({
+                        field: "Psg_Level",
+                        minSize: 20,
+                        maxSize: 20,
+                        minDataValue: '',
+                        maxDataValue: ''
+                    });
+                    layer.setRenderer(renderer);
+                }
 
                 if (layer.name === "OWRI Project Point Features") {               
                     var renderer = UniqueRenderer(fp_symbol);
                     layer.setRenderer(renderer);
                 }
 
-                dojo.connect(layer, "onClick", function (evt) {
-                    //add delete for option for barrier layer
-                    if (templatePicker.getSelected() === null) {
-                        if (evt.graphic.getLayer().name === barriersLayerName && (evt.ctrlKey === true || evt.metaKey === true)) {
-                            //delete feature if ctrl key is depressed
-                            dojo.stopEvent(evt);
-                            this.applyEdits(null, null, [evt.graphic], function () {
-                                var operation = new esri.dijit.editing.Delete({
-                                    featureLayer: layer,
-                                    deletedGraphics: [evt.graphic]
-                                });
-
-                                undoManager.add(operation);
-                                checkUI();
-                            });
-                        }
-                        else {
-                            if (map.infoWindow.isShowing) {
-                                map.infoWindow.hide();
-                            }
-
-                            var layerInfos = [{
-                                'featureLayer': layer,
-                                'isEditable': evt.graphic.attributes.Editor === editor_id ? true : false,
-                                'showDeleteButton': evt.graphic.attributes.Editor === editor_id ? true : false,
-                            }];
-
-                            switch (layer.name) {
-                                case "Fish Passage Barriers":
-
-                                    layerInfos[0].fieldInfos = [
-                                        { 'fieldName': 'fpbLat', 'label': 'Latitude' },
-                                        { 'fieldName': 'fpbLong', 'label': 'Longitude' },
-                                        { 'fieldName': 'fpbRevDt', 'label': 'Entry/Revision Date' },
-                                        { 'fieldName': 'fpbONm', 'label': 'Originator Name' },
-                                        { 'fieldName': 'fpbLocMd', 'label': 'Location Method' },
-                                        { 'fieldName': 'fpbFtrTy', 'label': 'Feature Type' },
-                                        { 'fieldName': 'fpbFtrNm', 'label': 'Feature Name' },
-                                        { 'fieldName': 'fpbFPasSta', 'label': 'Passage Status' },
-                                        { 'fieldName': 'fpbStaEvMd', 'label': 'Passage Eval Method' },
-                                        { 'fieldName': 'fpbStrNm', 'label': 'Stream Name' },
-                                        { 'fieldName': 'fpbRdNm', 'label': 'Road Name' },
-                                        { 'fieldName': 'fpbFtrSTy', 'label': 'Barrier Subtype' },
-                                        { 'fieldName': 'fpbOwn', 'label': 'Owner' },
-                                        { 'fieldName': 'fpbComment', 'label': 'Comment' },
-                                        { 'fieldName': 'Priority', 'label': 'Priority Barrier' },
-                                    ];
-
-                                    break;
-                                default:
-                                    break;
-                            }
-
-                            //store the current feature
-                            updateFeature = evt.graphic;
-
-                            var attInspector = new esri.dijit.AttributeInspector({
-                                layerInfos: layerInfos
-                            }, dojo.create("div"));
-
-                            var selectionSymbol = new SimpleMarkerSymbol().setColor(new Color([255, 255, 0, 0.5]));
-                            var noSelectionSymbol = new SimpleMarkerSymbol({
-                                "color": [255, 255, 255, 0],
-                                "size": 0
-                            });
-
-
-                            query.objectIds = [evt.graphic.attributes.objectid !== undefined ? evt.graphic.attributes.objectid : evt.graphic.attributes.OBJECTID];
-                            layer.selectFeatures(query, esri.layers.FeatureLayer.SELECTION_NEW, function (features) {
-                                map.infoWindow.setTitle(layer.name);
-                                map.infoWindow.setContent(attInspector.domNode);
-                                map.infoWindow.resize(400, 400);
-                                map.infoWindow.show(evt.screenPoint, map.getInfoWindowAnchor(evt.screenPoint));
-                                //featureClick = true;
-
-                                //if (activeStep === 3 && features[0].getLayer().name === barriersLayerName) {
-                                if (features[0].getLayer().name === barriersLayerName) {
-                                    selectedBarrierForReport = features[0];
-                                    features[0].getLayer().setSelectionSymbol(selectionSymbol);
-                                    var selected_html = features[0].attributes.fpbStrNm !== null ? "Name: " + features[0].attributes.fpbStrNm : "";
-                                    selected_html += features[0].attributes.fpbFtrID !== null ? '<br />Barrier ID: ' + features[0].attributes.fpbFtrID : "";
-                                    selected_html += features[0].attributes.fpbLat !== null ? '<br />Latitude: ' + features[0].attributes.fpbLat : "";
-                                    selected_html += features[0].attributes.fpbLong !== null ? '<br />Longitude: ' + features[0].attributes.fpbLong : "";
-                                    dojo.byId('selectedBarrier').innerHTML = selected_html;
-                                    dojo.byId('clearSelection').style.display = "block";
-                                }
-                                else {
-                                    //features[0].getLayer().clear();
-                                    features[0].getLayer().setSelectionSymbol();
-                                }
-                            });
-                        }
-                    }
-
-                });
-
-                
                 if (layer.name === "Fish Passage Barriers") {
-
-                    dojo.connect(layer, "onBeforeApplyEdits", function (adds,deletes,updates) {
+                    dojo.connect(layer, "onBeforeApplyEdits", function (adds, deletes, updates) {
                         dijit.byId("undo").set("disabled", true);
                         dijit.byId("redo").set("disabled", true);
                         dojo.forEach(adds, function (add) {
@@ -469,8 +379,8 @@ require([
                                     add.attributes['fpbLocMd'] = 'DigDerive';
                                     add.attributes['fpbLocAccu'] = 50;
                                     add.attributes['fpbLocDt'] = display_date;
-                                    add.attributes['Creator'] = editor_id;
-                                    add.attributes['Editor'] = editor_id;
+                                    add.attributes['OWEB_userid'] = editor_id;
+                                    add.attributes['OWEB_status'] = 1;
                                     if (results[0].features.length > 0) {
                                         add.attributes['fpbStrNm'] = results[0].features[0].attributes.GNIS_NAME !== null ? results[0].features[0].attributes.GNIS_NAME : "";
                                     }
@@ -478,10 +388,126 @@ require([
                                     //    add.attributes['fpbRdNm'] = results[1].features[0].attributes.NAME !== null ? results[1].features[0].attributes.NAME : "";
                                     //}                                    
                                 });
-                            });                                                                          
-                        });                        
-                    });                    
-                }
+                            });
+                        });
+                    });
+                    dojo.connect(layer, "onClick", function (evt) {
+                        //add delete for option for barrier layer
+                        if (templatePicker.getSelected() === null) {
+                            if (evt.graphic.getLayer().name === barriersLayerName && (evt.ctrlKey === true || evt.metaKey === true)) {
+                                //delete feature if ctrl key is depressed
+                                dojo.stopEvent(evt);
+                                this.applyEdits(null, null, [evt.graphic], function () {
+                                    var operation = new esri.dijit.editing.Delete({
+                                        featureLayer: layer,
+                                        deletedGraphics: [evt.graphic]
+                                    });
+
+                                    undoManager.add(operation);
+                                    checkUI();
+                                });
+                            }
+                            else {
+                                this.applyEdits(null, [evt.graphic], null);//update
+                                if (map.infoWindow.isShowing) {
+                                    map.infoWindow.hide();
+                                }
+                                var layerInfos = [{
+                                    'featureLayer': layer,
+                                    'isEditable': evt.graphic.attributes.OWEB_userid === editor_id ? true : false,
+                                    'showDeleteButton': evt.graphic.attributes.OWEB_userid === editor_id ? true : false,
+                                }];
+                                layerInfos[0].fieldInfos = [
+                                    { 'fieldName': 'fpbLat', 'label': 'Latitude' },
+                                    { 'fieldName': 'fpbLong', 'label': 'Longitude' },
+                                    { 'fieldName': 'fpbRevDt', 'label': 'Entry/Revision Date' },
+                                    { 'fieldName': 'fpbONm', 'label': 'Originator Name' },
+                                    { 'fieldName': 'fpbLocMd', 'label': 'Location Method' },
+                                    { 'fieldName': 'fpbFtrTy', 'label': 'Feature Type' },
+                                    { 'fieldName': 'fpbFtrNm', 'label': 'Feature Name' },
+                                    { 'fieldName': 'fpbFPasSta', 'label': 'Passage Status' },
+                                    { 'fieldName': 'fpbStaEvMd', 'label': 'Passage Eval Method' },
+                                    { 'fieldName': 'fpbStrNm', 'label': 'Stream Name' },
+                                    { 'fieldName': 'fpbRdNm', 'label': 'Road Name' },
+                                    { 'fieldName': 'fpbFtrSTy', 'label': 'Barrier Subtype' },
+                                    { 'fieldName': 'fpbOwn', 'label': 'Owner' },
+                                    { 'fieldName': 'fpbComment', 'label': 'Comment' },
+                                    { 'fieldName': 'Priority', 'label': 'Priority Barrier' },
+                                    { 'fieldName': 'OWEB_userid', 'visible': false, 'label': 'OWEB ProjectID' },
+                                ];                               
+
+                                //store the current feature
+                                updateFeature = evt.graphic;
+
+                                var attInspectorSelect = new esri.dijit.AttributeInspector({
+                                    layerInfos: layerInfos,
+                                    //userid:editor_id
+                                }, dojo.create("div"));
+
+                                if (evt.graphic.attributes.OWEB_userid === editor_id) {
+                                    ////add a save button next to the delete button
+                                    var saveButtonSelect = new Button({ label: "Save", "class": "saveButton" }, domConstruct.create("div"));
+
+                                    domConstruct.place(saveButtonSelect.domNode, attInspectorSelect.deleteBtn.domNode, "after");
+
+                                    saveButtonSelect.on("click", function (feature) {
+                                        updateFeature.getLayer().applyEdits(null, [updateFeature], null);
+                                        map.infoWindow.hide();
+                                        //drawToolbar.deactivate();
+                                    });
+
+                                    attInspectorSelect.deleteBtn.onClick = function (feature) {
+                                        updateFeature.getLayer().applyEdits(null, null, [updateFeature]);
+                                        map.infoWindow.hide();
+                                    };
+                                    dojo.connect(attInspectorSelect, "onDelete", function (feature) {
+
+                                    });
+                                }
+
+                                attInspectorSelect.startup();
+
+                                attInspectorSelect.on("attribute-change", function (evt) {
+                                    var feature = evt.feature;
+                                    feature.attributes[evt.fieldName] = evt.fieldValue;
+                                    feature.getLayer().applyEdits(null, [feature], null);
+                                });
+
+                                var selectionSymbol = new SimpleMarkerSymbol().setColor(new Color([255, 255, 0, 0.5]));
+                                var noSelectionSymbol = new SimpleMarkerSymbol({
+                                    "color": [255, 255, 255, 0],
+                                    "size": 0
+                                });                             
+
+                                query.objectIds = [evt.graphic.attributes.objectid !== undefined ? evt.graphic.attributes.objectid : evt.graphic.attributes.OBJECTID];
+                                layer.selectFeatures(query, esri.layers.FeatureLayer.SELECTION_NEW, function (features) {
+                                    map.infoWindow.setTitle(layer.name);
+                                    map.infoWindow.setContent(attInspectorSelect.domNode);
+                                    map.infoWindow.resize(400, 400);
+                                    map.infoWindow.show(evt.screenPoint, map.getInfoWindowAnchor(evt.screenPoint));
+                                    
+                                    if (features[0].getLayer().name === barriersLayerName) {
+                                        selectedBarrierForReport = features[0];
+                                        features[0].getLayer().setSelectionSymbol(selectionSymbol);
+                                        var selected_html = features[0].attributes.fpbStrNm !== null ? "Name: " + features[0].attributes.fpbStrNm : "";
+                                        selected_html += features[0].attributes.fpbFtrID !== null ? '<br />Barrier ID: ' + features[0].attributes.fpbFtrID : "";
+                                        selected_html += features[0].attributes.fpbLat !== null ? '<br />Latitude: ' + features[0].attributes.fpbLat : "";
+                                        selected_html += features[0].attributes.fpbLong !== null ? '<br />Longitude: ' + features[0].attributes.fpbLong : "";
+                                        dojo.byId('selectedBarrier').innerHTML = selected_html;
+                                        dojo.byId('clearSelection').style.display = "block";
+                                    }
+                                    else {
+                                        //features[0].getLayer().clear();
+                                        features[0].getLayer().setSelectionSymbol();
+                                    }
+                                });
+                            }
+                        }
+
+                    });
+
+                }        
+                
             });
             
             //get just the barriers layer for template picker
@@ -489,13 +515,15 @@ require([
             //    return layer.name === barriersLayerName;
             //});
             
-            addLegend(results);
+            addLegend(results);            
+
 
             templatePicker = new esri.dijit.editing.TemplatePicker({
-                featureLayers: [barriers],//barrierLayer,
+                featureLayers: [barriers],//barrierLayer,                
                 rows: 3,
                 columns: 3,
-                grouping: true
+                grouping: true,
+                useLegend: false
             }, "templateDiv");
 
             templatePicker.startup();     
@@ -585,6 +613,8 @@ require([
                                     { 'fieldName': 'fpbOrYr', 'label': 'Origin Year' },
                                     { 'fieldName': 'fpbOwn', 'label': 'Owner' },
                                     { 'fieldName': 'fpbComment', 'label': 'Comment' },
+                                    { 'fieldName': 'OWEB_userid', 'label': 'OWEB UserID' },
+                                    { 'fieldName': 'OWEB_status', 'label': 'OWEB Status' },
                     ]
                 }];
 
@@ -597,13 +627,57 @@ require([
 
                 domConstruct.place(saveButton.domNode, attInspector.deleteBtn.domNode, "after");
 
-                saveButton.on("click", function () {
-                    updateFeature.getLayer().applyEdits(null, [updateFeature], null);
-                    map.infoWindow.hide();
-                    drawToolbar.deactivate();
+                //attInspector.on("attribute-change", function (evt) {
+                //    var feature = evt.feature;
+                //    feature.attributes[evt.fieldName] = evt.newFieldValue;
+                //    feature.getLayer().applyEdits(null, [feature], null);
+                //});               
+
+                attInspector.startup();
+
+                saveButton.on("click", function (evt) {
+                    if (updateFeature.attributes.fpbLat !== 0) {
+                        updateFeature.getLayer().applyEdits(null, [updateFeature], null);
+                        map.infoWindow.hide();
+                        drawToolbar.deactivate();
+                    }
+                    else {
+                        evt.preventDefault();
+                        return false;
+                    }
                 });
 
-                window.setTimeout(function () { }, 1000);
+                dojo.connect(attInspector, "onAttributeChange", function (feature, fieldName, newFieldValue) {
+                    var originalFeature = feature.toJson();
+                    feature.attributes[fieldName] = newFieldValue;
+                    feature.getLayer().applyEdits(null, [feature], null);
+                    updateFeature = feature;
+
+                    var operation = new esri.dijit.editing.Update({
+                        featureLayer: feature.getLayer(),
+                        preUpdatedGraphics: [new esri.Graphic(originalFeature)],
+                        postUpdatedGraphics: [feature]
+                    });
+
+                    undoManager.add(operation);
+                    checkUI();
+                });
+
+                dojo.connect(attInspector, "onDelete", function (feature) {
+                    feature.getLayer().applyEdits(null, null, [feature]);
+                    updateFeature = feature;
+
+                    var operation = new esri.dijit.editing.Delete({
+                        featureLayer: feature.getLayer(),
+                        deletedGraphics: [feature]
+                    });
+
+                    undoManager.add(operation);
+                    checkUI();
+                    map.infoWindow.hide();
+                });
+
+                //window.setTimeout(function () { }, 1000);
 
                 selectedTemplate.featureLayer.applyEdits([newGraphic], null, null, function () {
                     if (newGraphic.attributes.fpbLat !== 0) {
@@ -631,47 +705,17 @@ require([
                         //delete graphic to clean up.
                         selectedTemplate.featureLayer.applyEdits(null, null, [newGraphic], function () {
                             alert("Sorry, there was a problem adding your barrier. Please try again.");
-                            templatePicker.clearSelection();
-                            //var operation = new esri.dijit.editing.Delete({
-                            //    featureLayer: selectedTemplate.featureLayer,
-                            //    deletedGraphics: [newGraphic]
-                            //});
-
-                            //undoManager.add(operation);
-                            //checkUI();
+                            //var selectedTemplate = templatePicker.getSelected();
+                            var selectedTemplate = templatePicker.getSelected();                            
+                            if (selectedTemplate !== null) {
+                                drawToolbar.activate(esri.toolbars.Draw.POINT);
+                            }
+                            //templatePicker.clearSelection();                           
                         });
                     }
                 });                
 
-                dojo.connect(attInspector, "onAttributeChange", function (feature, fieldName, newFieldValue) {
-                    var originalFeature = feature.toJson();
-                    feature.attributes[fieldName] = newFieldValue;
-                    feature.getLayer().applyEdits(null, [feature], null);
-                    updateFeature = feature;
-                    
-                    var operation = new esri.dijit.editing.Update({
-                        featureLayer: feature.getLayer(),
-                        preUpdatedGraphics: [new esri.Graphic(originalFeature)],
-                        postUpdatedGraphics: [feature]
-                    });
-
-                    undoManager.add(operation);
-                    checkUI();
-                });
-
-                dojo.connect(attInspector, "onDelete", function (feature) {
-                    feature.getLayer().applyEdits(null, null, [feature]);
-                    updateFeature = feature;
-                    
-                    var operation = new esri.dijit.editing.Delete({
-                        featureLayer: feature.getLayer(),
-                        deletedGraphics: [feature]
-                    });
-
-                    undoManager.add(operation);
-                    checkUI();
-                    map.infoWindow.hide();
-                });
+                
                
             });
 
@@ -681,6 +725,8 @@ require([
 
 
         });
+
+     
 
         function showLocation(evt) {
             map.graphics.clear();
