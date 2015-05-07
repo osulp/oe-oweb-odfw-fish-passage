@@ -516,8 +516,26 @@ require([
             //});
             
             addLegend(results);            
+            
 
+            
 
+            barriers.types = barriers.types.sort(function (a, b) {
+                if (a.name > b.name) {
+                    return 1;
+                }
+                if (a.name < b.name) {
+                    return -1;
+                }
+                // a must be equal to b
+                return 0;
+            });
+
+            barriers.types = barriers.types.map(function (type) {               
+                return [barriers.renderer.values.indexOf(type.id), type]
+            }).sort().map(function (j) {
+                return j[1]
+            })
             templatePicker = new esri.dijit.editing.TemplatePicker({
                 featureLayers: [barriers],//barrierLayer,                
                 rows: 3,
