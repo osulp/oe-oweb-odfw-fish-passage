@@ -14,11 +14,12 @@
     barriersLayerName = "Fish Passage Barriers",
     nhdServiceUrl = "http://services.nationalmap.gov/arcgis/rest/services/nhd/MapServer/10",
     fpServiceUrl = "http://services.arcgis.com/uUvqNMGPm7axC2dD/arcgis/rest/services/OregonFishPassageBarriers/FeatureServer/0",
+    fpPriorityServiceUrl = "http://services.arcgis.com/uUvqNMGPm7axC2dD/ArcGIS/rest/services/ODFW_FishPassageBarriers/FeatureServer/0",
     geometryServiceUrl = "http://arcgis.oregonexplorer.info/arcgis/rest/services/Utilities/Geometry/GeometryServer",
     oregonMaskServiceUrl = "http://arcgis.oregonexplorer.info/arcgis/rest/services/oreall/oreall_admin/MapServer", //36;
     roadServiceUrl = "http://navigator.state.or.us/arcgis/rest/services/Framework/Trans_GeneralMap_WM/MapServer/3",
     editor_id = 12;
-
+//ags jsapi requires
 require([
   "esri/map",
   "esri/SnappingManager",
@@ -76,6 +77,10 @@ require([
   arrayUtils, parser, keys, Button, Dialog
 ) {
     parser.parse();
+
+    //get Query String values for ProjectID,
+    var qsParams = getQueryStrings();
+    editor_id = qsParams.length > 0 && qsParams.opbsid !== undefined ? qsParams.opbsid : editor_id;
 
     //set dojo connects/styles etc
     set_display_handlers();
@@ -225,11 +230,12 @@ require([
         oregonMask.setVisibleLayers([36]);
         map.addLayer(oregonMask);
 
+        //Stream layer with LABELS-- TURNED OFF because arrows display
         //var nhd = new ArcGISDynamicMapService("http://services.nationalmap.gov/arcgis/rest/services/nhd/MapServer", { "opacity": 0.1 });
         //nhd.setVisibleLayers([10]);
         //map.addLayer(nhd);       
         
-
+        //OWRI projects-- TURNED OFF to reduce confusion
         //var owri_fp = new FeatureLayer("http://arcgis.oregonexplorer.info/arcgis/rest/services/oreall/oreall_restoration/MapServer/5", {
         //    "id": "owri fp",
         //    outFields: ['*'],
@@ -244,7 +250,7 @@ require([
         });            
         
 
-        var priorityBarriers = new FeatureLayer("http://services.arcgis.com/uUvqNMGPm7axC2dD/ArcGIS/rest/services/ODFW_FishPassageBarriers/FeatureServer/0", {
+        var priorityBarriers = new FeatureLayer(fpPriorityServiceUrl, {
             outFields: ['*']
         });
         //
@@ -276,27 +282,26 @@ require([
             if (evt.keyCode === 27) {
                 drawToolbar.deactivate();
                 templatePicker.clearSelection();
-            }            
+            }
         });
 
-        //map.on("load", enableSpotlight);
-        map.on('extent-change', function (evt) {            
+        map.on('extent-change', function (evt) {
             dojo.query('#template-overlay').style("display", evt.lod.level > 12 ? "none" : "block");
             //show all barriers when zoomed in
             if (barriers !== undefined) {
                 var expression = evt.lod.level < 12 ? "Priority<>''" : "1=1";
-                barriers.setDefinitionExpression(expression);                
+                barriers.setDefinitionExpression(expression);
             }
 
-        });
-        //map.on("click", function (evt) {
-        //    //removeSpotlight();            
-        //});
+        });        
         map.infoWindow.on("hide", function () {
             barriers.clearSelection();
         });
         geocoder.on("select", showLocation);
-        geocoder.on("clear", removeSpotlight);
+        geocoder.on("clear", function () {
+            map.infoWindow.hide();
+            map.graphics.clear();
+        });
 
         //add the legend and edit template picker when map.addLayers called.  Only layers added with this will be included. 
         map.on("layers-add-result", function (results) {            
@@ -331,10 +336,11 @@ require([
                     layer.setRenderer(renderer);
                 }
 
-                if (layer.name === "OWRI Project Point Features") {               
-                    var renderer = UniqueRenderer(fp_symbol);
-                    layer.setRenderer(renderer);
-                }
+                //TURNED OFF
+                //if (layer.name === "OWRI Project Point Features") {               
+                //    var renderer = UniqueRenderer(fp_symbol);
+                //    layer.setRenderer(renderer);
+                //}
 
                 if (layer.name === "Fish Passage Barriers") {
                     dojo.connect(layer, "onBeforeApplyEdits", function (adds, deletes, updates) {
@@ -367,10 +373,11 @@ require([
                                 stream_query.outFields = ["GNIS_NAME"];
                                 road_query.outFields = ["NAME"];
 
-                                var stream_promise = qt_stream.execute(stream_query);
-                                //var road_promise = qt_roads.execute(road_query);
-                                //var promises = all([stream_promise, road_promise]);
-                                var promises = all([stream_promise]);
+                                var stream_promise = qt_stream.execute(stream_query);                                
+                                var road_promise = qt_roads.execute(road_query);
+                                //var promises = all([stream_promise]);
+                                var promises = all([stream_promise, road_promise]);
+                                
                                 promises.then(function (results) {
                                     add.attributes['fpbLat'] = mp.y.toFixed(5);
                                     add.attributes['fpbLong'] = mp.x.toFixed(5);
@@ -384,9 +391,9 @@ require([
                                     if (results[0].features.length > 0) {
                                         add.attributes['fpbStrNm'] = results[0].features[0].attributes.GNIS_NAME !== null ? results[0].features[0].attributes.GNIS_NAME : "";
                                     }
-                                    //if (results[1].features.length > 0) {
-                                    //    add.attributes['fpbRdNm'] = results[1].features[0].attributes.NAME !== null ? results[1].features[0].attributes.NAME : "";
-                                    //}                                    
+                                    if (results[1].features.length > 0) {
+                                        add.attributes['fpbRdNm'] = results[1].features[0].attributes.NAME !== null ? results[1].features[0].attributes.NAME : "";
+                                    }                                    
                                 });
                             });
                         });
@@ -452,6 +459,7 @@ require([
 
                                     saveButtonSelect.on("click", function (feature) {
                                         updateFeature.getLayer().applyEdits(null, [updateFeature], null);
+                                        selectedBarrierForReport = updateFeature;
                                         map.infoWindow.hide();
                                         //drawToolbar.deactivate();
                                     });
@@ -508,17 +516,9 @@ require([
 
                 }        
                 
-            });
+            });          
             
-            //get just the barriers layer for template picker
-            //var barrierLayer = dojo.filter(layers, function (layer) {
-            //    return layer.name === barriersLayerName;
-            //});
-            
-            addLegend(results);            
-            
-
-            
+            addLegend(results);                   
 
             barriers.types = barriers.types.sort(function (a, b) {
                 if (a.name > b.name) {
@@ -583,10 +583,7 @@ require([
             //when users select an item from the template picker activate the draw toolbar
             //with the geometry type of the selected template item.
             dojo.connect(templatePicker, "onSelectionChange", function (evt) {
-                selectedTemplate = templatePicker.getSelected();
-                //if (templatePicker.getSelected()) {
-                //    selectedTemplate = templatePicker.getSelected();
-                //}
+                selectedTemplate = templatePicker.getSelected();               
                 if (selectedTemplate !== null) {
                     drawToolbar.activate(esri.toolbars.Draw.POINT);
                 }
@@ -631,8 +628,8 @@ require([
                                     { 'fieldName': 'fpbOrYr', 'label': 'Origin Year' },
                                     { 'fieldName': 'fpbOwn', 'label': 'Owner' },
                                     { 'fieldName': 'fpbComment', 'label': 'Comment' },
-                                    { 'fieldName': 'OWEB_userid', 'label': 'OWEB UserID' },
-                                    { 'fieldName': 'OWEB_status', 'label': 'OWEB Status' },
+                                    //{ 'fieldName': 'OWEB_userid', 'label': 'OWEB UserID' },
+                                    //{ 'fieldName': 'OWEB_status', 'label': 'OWEB Status' },
                     ]
                 }];
 
@@ -643,13 +640,7 @@ require([
                 ////add a save button next to the delete button
                 var saveButton = new Button({ label: "Save", "class": "saveButton" }, domConstruct.create("div"));
 
-                domConstruct.place(saveButton.domNode, attInspector.deleteBtn.domNode, "after");
-
-                //attInspector.on("attribute-change", function (evt) {
-                //    var feature = evt.feature;
-                //    feature.attributes[evt.fieldName] = evt.newFieldValue;
-                //    feature.getLayer().applyEdits(null, [feature], null);
-                //});               
+                domConstruct.place(saveButton.domNode, attInspector.deleteBtn.domNode, "after");                           
 
                 attInspector.startup();
 
@@ -728,20 +719,11 @@ require([
                             if (selectedTemplate !== null) {
                                 drawToolbar.activate(esri.toolbars.Draw.POINT);
                             }
-                            //templatePicker.clearSelection();                           
+                                                  
                         });
                     }
-                });                
-
-                
-               
+                });                                              
             });
-
-            
-            //map.infoWindow.setContent(attInspector.domNode);
-            //map.infoWindow.resize(350, 440);
-
-
         });
 
      
@@ -758,41 +740,8 @@ require([
 
             map.infoWindow.setTitle("Search Result");
             map.infoWindow.setContent(evt.result.name);
-            map.infoWindow.show(evt.result.feature.geometry);
-
-            //var spotlight = map.on("extent-change", function (extentChange) {
-            //    var geom = screenUtils.toScreenGeometry(map.extent, map.width, map.height, extentChange.extent);
-            //    var width = geom.xmax - geom.xmin;
-            //    var height = geom.ymin - geom.ymax;
-
-            //    var max = height;
-            //    if (width > height) {
-            //        max = width;
-            //    }
-
-            //    var margin = '-' + Math.floor(max / 2) + 'px 0 0 -' + Math.floor(max / 2) + 'px';
-
-            //    query(".spotlight").addClass("spotlight-active").style({
-            //        width: max + "px",
-            //        height: max + "px",
-            //        margin: margin
-            //    });
-            //    spotlight.remove();
-            //});
-        }
-
-        function enableSpotlight() {
-            var html = "<div id='spotlight' class='spotlight'></div>"
-            domConstruct.place(html, dom.byId("map_container"), "first");
-        }
-
-        function removeSpotlight() {
-            //query(".spotlight").removeClass("spotlight-active");
-            map.infoWindow.hide();
-            map.graphics.clear();
-        }
-
-        
+            map.infoWindow.show(evt.result.feature.geometry);            
+        }       
     }
 
     function addLegend(results) {
@@ -861,4 +810,25 @@ function gotoStep(stepNum) {
     dojo.forEach(steps, function (step, index) {
         step.style.display = index + 1 === stepNum ? 'block' : 'none';
     });
+}
+
+function getQueryStrings() {
+    var vars = [], hash;
+    var hashes = window.location.href.slice(window.location.href.indexOf('?') + 1).split('&');
+    for (var i = 0; i < hashes.length; i++) {
+        hash = hashes[i].split('=');
+        vars.push(hash[0]);
+        vars[hash[0]] = hash[1];
+    }
+    return vars;
+}
+
+function returnToApplication() {
+    // Check to confirm that the window.opener is present.
+    if (window.opener) {
+        // Get the values of the parent form.
+        window.opener.document.getElementById('response').innerHTML = selectedBarrierForReport !== undefined ? "Lat:" + selectedBarrierForReport.attributes.fpbLat + " Long:" + selectedBarrierForReport.attributes.fpbLong + " ID:" + selectedBarrierForReport.attributes.fpbOSiteID : "";
+        window.close();
+        
+    }
 }

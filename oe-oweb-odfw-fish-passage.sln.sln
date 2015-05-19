@@ -5,14 +5,14 @@ Project("{E24C65DC-7377-472B-9ABA-BC803B73C61A}") = "oe-oweb-odfw-fish-passage",
 	ProjectSection(WebsiteProperties) = preProject
 		TargetFrameworkMoniker = ".NETFramework,Version%3Dv4.0"
 		Debug.AspNetCompiler.VirtualPath = "/oe-oweb-odfw-fish-passage"
-		Debug.AspNetCompiler.PhysicalPath = "..\..\..\GitHub\oe-oweb-odfw-fish-passage\"
+		Debug.AspNetCompiler.PhysicalPath = "..\oe-oweb-odfw-fish-passage\"
 		Debug.AspNetCompiler.TargetPath = "PrecompiledWeb\oe-oweb-odfw-fish-passage\"
 		Debug.AspNetCompiler.Updateable = "true"
 		Debug.AspNetCompiler.ForceOverwrite = "true"
 		Debug.AspNetCompiler.FixedNames = "false"
 		Debug.AspNetCompiler.Debug = "True"
 		Release.AspNetCompiler.VirtualPath = "/oe-oweb-odfw-fish-passage"
-		Release.AspNetCompiler.PhysicalPath = "..\..\..\GitHub\oe-oweb-odfw-fish-passage\"
+		Release.AspNetCompiler.PhysicalPath = "..\oe-oweb-odfw-fish-passage\"
 		Release.AspNetCompiler.TargetPath = "PrecompiledWeb\oe-oweb-odfw-fish-passage\"
 		Release.AspNetCompiler.Updateable = "true"
 		Release.AspNetCompiler.ForceOverwrite = "true"
@@ -20,6 +20,8 @@ Project("{E24C65DC-7377-472B-9ABA-BC803B73C61A}") = "oe-oweb-odfw-fish-passage",
 		Release.AspNetCompiler.Debug = "False"
 		VWDPort = "38379"
 	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{7C7031AD-6A4F-4733-99C0-9FCCBF49D7E3}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
