@@ -259,7 +259,7 @@ require([
             outFields: ['*'],
             //minScale:400000
         });
-        barriers.setDefinitionExpression("Priority<>''");
+        barriers.setDefinitionExpression("Priority in (NULL,0,1,2,3,4,5)");
         map.addLayers([streams, priorityBarriers, barriers]);
 
     }
