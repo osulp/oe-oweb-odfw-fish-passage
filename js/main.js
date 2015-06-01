@@ -373,28 +373,40 @@ require([
                                 stream_query.outFields = ["GNIS_NAME"];
                                 road_query.outFields = ["NAME"];
 
-                                var stream_promise = qt_stream.execute(stream_query);                                
-                                var road_promise = qt_roads.execute(road_query);
-                                //var promises = all([stream_promise]);
-                                var promises = all([stream_promise, road_promise]);
+                                add.attributes['fpbLat'] = mp.y.toFixed(5);
+                                add.attributes['fpbLong'] = mp.x.toFixed(5);
+                                add.attributes['fpbRevDt'] = display_date;
+                                add.attributes['fpbONm'] = 'OWEB';
+                                add.attributes['fpbLocMd'] = 'DigDerive';
+                                add.attributes['fpbLocAccu'] = 50;
+                                add.attributes['fpbLocDt'] = display_date;
+                                add.attributes['OWEB_userid'] = editor_id;
+                                add.attributes['OWEB_status'] = 1;
+
+                                //CODE TO QUERY STREAMS AND ROAD 
+                                //var stream_promise = qt_stream.execute(stream_query);                                
+                                //var road_promise = qt_roads.execute(road_query);
+                                ////var promises = all([stream_promise]);
+                                //var promises = all([stream_promise, road_promise]);
                                 
-                                promises.then(function (results) {
-                                    add.attributes['fpbLat'] = mp.y.toFixed(5);
-                                    add.attributes['fpbLong'] = mp.x.toFixed(5);
-                                    add.attributes['fpbRevDt'] = display_date;
-                                    add.attributes['fpbONm'] = 'OWEB';
-                                    add.attributes['fpbLocMd'] = 'DigDerive';
-                                    add.attributes['fpbLocAccu'] = 50;
-                                    add.attributes['fpbLocDt'] = display_date;
-                                    add.attributes['OWEB_userid'] = editor_id;
-                                    add.attributes['OWEB_status'] = 1;
-                                    if (results[0].features.length > 0) {
-                                        add.attributes['fpbStrNm'] = results[0].features[0].attributes.GNIS_NAME !== null ? results[0].features[0].attributes.GNIS_NAME : "";
-                                    }
-                                    if (results[1].features.length > 0) {
-                                        add.attributes['fpbRdNm'] = results[1].features[0].attributes.NAME !== null ? results[1].features[0].attributes.NAME : "";
-                                    }                                    
-                                });
+                                //promises.then(function (results) {
+                                //    add.attributes['fpbLat'] = mp.y.toFixed(5);
+                                //    add.attributes['fpbLong'] = mp.x.toFixed(5);
+                                //    add.attributes['fpbRevDt'] = display_date;
+                                //    add.attributes['fpbONm'] = 'OWEB';
+                                //    add.attributes['fpbLocMd'] = 'DigDerive';
+                                //    add.attributes['fpbLocAccu'] = 50;
+                                //    add.attributes['fpbLocDt'] = display_date;
+                                //    add.attributes['OWEB_userid'] = editor_id;
+                                //    add.attributes['OWEB_status'] = 1;
+                                //    if (results[0].features.length > 0) {
+                                //        add.attributes['fpbStrNm'] = results[0].features[0].attributes.GNIS_NAME !== null ? results[0].features[0].attributes.GNIS_NAME : "";
+                                //    }
+                                //    if (results[1].features.length > 0) {
+                                //        add.attributes['fpbRdNm'] = results[1].features[0].attributes.NAME !== null ? results[1].features[0].attributes.NAME : "";
+                                //    }                                    
+                                //});
+                                //END CODE TO QUERY STERAMS AND ROAD
                             });
                         });
                     });
