@@ -351,39 +351,41 @@ require([
                             var mp = webMercatorUtils.webMercatorToGeographic(add.geometry);
                             currentDate = new Date();
                             var display_date = currentDate.getFullYear() + "" + ((currentDate.getMonth() + 1) > 9 ? (currentDate.getMonth() + 1) : "0" + (currentDate.getMonth() + 1)) + "" + ((currentDate.getDate() > 9 ? currentDate.getDate() : "0" + currentDate.getDate()));
+                            //COMMENT OUT THIS SECTION FOR ROAD/STREAM QUERIES AS IT NEEDS TO BE ADDED LATER IN THAT CONTEXT.
+                            add.attributes['fpbLat'] = mp.y.toFixed(5);
+                            add.attributes['fpbLong'] = mp.x.toFixed(5);
+                            add.attributes['fpbRevDt'] = display_date;
+                            add.attributes['fpbONm'] = 'OWEB';
+                            add.attributes['fpbLocMd'] = 'DigDerive';
+                            add.attributes['fpbLocAccu'] = 50;
+                            add.attributes['fpbLocDt'] = display_date;
+                            add.attributes['OWEB_userid'] = editor_id;
+                            add.attributes['OWEB_status'] = 1;
+                            //END COMMENT OUT SECTION FOR ROAD/STREAM QUERY
+
                             //buffer point for stream/road queries
                             //setup the buffer parameters
-                            var params = new BufferParameters();
-                            params.distances = [100];
-                            params.outSpatialReference = map.spatialReference;
-                            params.unit = GeometryService['UNIT_FOOT'];
-                            params.geometries = [add.geometry];
+                            //CODE TO QUERY STREAMS AND ROAD 
+                            //var params = new BufferParameters();
+                            //params.distances = [100];
+                            //params.outSpatialReference = map.spatialReference;
+                            //params.unit = GeometryService['UNIT_FOOT'];
+                            //params.geometries = [add.geometry];
 
-                            esriConfig.defaults.geometryService.buffer(params, function (bufferedGeom) {
+                            //esriConfig.defaults.geometryService.buffer(params, function (bufferedGeom) {                                                              
                                 //build query task
-                                qt_stream = new esri.tasks.QueryTask(nhdServiceUrl);
-                                qt_roads = new esri.tasks.QueryTask(roadServiceUrl);
+                                //qt_stream = new esri.tasks.QueryTask(nhdServiceUrl);
+                                //qt_roads = new esri.tasks.QueryTask(roadServiceUrl);
 
-                                var stream_query = new esri.tasks.Query();
-                                var road_query = new esri.tasks.Query();
+                                //var stream_query = new esri.tasks.Query();
+                                //var road_query = new esri.tasks.Query();
 
-                                stream_query.outSpatialReference = road_query.outSpatialReference = { "wkid": 102100 };
-                                stream_query.returnGeometry = road_query.returnGeometry = false;
-                                stream_query.geometry = road_query.geometry = bufferedGeom[0];
-                                stream_query.outFields = ["GNIS_NAME"];
-                                road_query.outFields = ["NAME"];
+                                //stream_query.outSpatialReference = road_query.outSpatialReference = { "wkid": 102100 };
+                                //stream_query.returnGeometry = road_query.returnGeometry = false;
+                                //stream_query.geometry = road_query.geometry = bufferedGeom[0];
+                                //stream_query.outFields = ["GNIS_NAME"];
+                                //road_query.outFields = ["NAME"];
 
-                                add.attributes['fpbLat'] = mp.y.toFixed(5);
-                                add.attributes['fpbLong'] = mp.x.toFixed(5);
-                                add.attributes['fpbRevDt'] = display_date;
-                                add.attributes['fpbONm'] = 'OWEB';
-                                add.attributes['fpbLocMd'] = 'DigDerive';
-                                add.attributes['fpbLocAccu'] = 50;
-                                add.attributes['fpbLocDt'] = display_date;
-                                add.attributes['OWEB_userid'] = editor_id;
-                                add.attributes['OWEB_status'] = 1;
-
-                                //CODE TO QUERY STREAMS AND ROAD 
                                 //var stream_promise = qt_stream.execute(stream_query);                                
                                 //var road_promise = qt_roads.execute(road_query);
                                 ////var promises = all([stream_promise]);
@@ -405,9 +407,9 @@ require([
                                 //    if (results[1].features.length > 0) {
                                 //        add.attributes['fpbRdNm'] = results[1].features[0].attributes.NAME !== null ? results[1].features[0].attributes.NAME : "";
                                 //    }                                    
-                                //});
-                                //END CODE TO QUERY STERAMS AND ROAD
-                            });
+                                //});                                
+                            //  });
+                            //END CODE TO QUERY STERAMS AND ROAD
                         });
                     });
                     dojo.connect(layer, "onClick", function (evt) {
