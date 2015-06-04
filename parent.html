@@ -1,0 +1,24 @@
+﻿<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head runat="server">
+    <title></title>
+    <script>
+        function openWindow() {
+            var projectID = document.getElementById("projectID");
+            var url = 'index.html?opbsid=' + projectID.value;
+            window.open(url, 'child', "width=1200, height=800");
+        }
+
+    </script>
+</head>
+<body>
+    <div>Open map with id:
+    <input id="projectID" type="text" />
+    <input type="button" onclick="openWindow();" value="Submit" />
+        </div>
+    <div>
+        <div id="response">RESPONSE</div>
+    </div>
+</body>
+</html>
