@@ -289,7 +289,7 @@ require([
             dojo.query('#template-overlay').style("display", evt.lod.level > 12 ? "none" : "block");
             //show all barriers when zoomed in
             if (barriers !== undefined) {
-                var expression = evt.lod.level < 12 ? "Priority<>''" : "1=1";
+                var expression = evt.lod.level < 12 ? "Priority in (NULL,0,1,2,3,4,5)" : "1=1";
                 barriers.setDefinitionExpression(expression);
             }
 
